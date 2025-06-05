@@ -21,9 +21,6 @@ contract SystemParameters is
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     
-    // Period to APY mapping
-    mapping(uint256 => uint256) private _periodAPY;
-    
     // Minimum investment amount
     uint256 private _minInvestmentAmount;
     
@@ -40,7 +37,6 @@ contract SystemParameters is
     uint256 private _profitWithdrawalCooldown;
     
     // Event definitions
-    event PeriodAPYUpdated(uint256 period, uint256 apy);
     event MinInvestmentAmountUpdated(uint256 amount);
     event MaxInvestmentAmountUpdated(uint256 amount);
     event InvestmentCooldownUpdated(uint256 cooldown);
@@ -74,26 +70,6 @@ contract SystemParameters is
     modifier onlyAdmin() {
         require(hasRole(ADMIN_ROLE, msg.sender), "SystemParameters: caller is not an admin");
         _;
-    }
-    
-    /**
-     * @dev Set period APY
-     * @param period Period (in seconds)
-     * @param apy Annual percentage yield (precision 1e18)
-     */
-    function setPeriodAPY(uint256 period, uint256 apy) external override onlyAdmin {
-        require(period > 0, "SystemParameters: period must be greater than 0");
-        _periodAPY[period] = apy;
-        emit PeriodAPYUpdated(period, apy);
-    }
-    
-    /**
-     * @dev Get period APY
-     * @param period Period (in seconds)
-     * @return Annual percentage yield
-     */
-    function getPeriodAPY(uint256 period) external view override returns (uint256) {
-        return _periodAPY[period];
     }
     
     /**

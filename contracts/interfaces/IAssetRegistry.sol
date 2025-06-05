@@ -9,27 +9,23 @@ interface IAssetRegistry {
     /**
      * @dev Asset structure
      * @param assetId Asset ID
-     * @param name Asset name (Chinese)
-     * @param nameEn Asset name (English)
-     * @param description Asset description
+     * @param name Asset name
      * @param issuer Issuer
      * @param totalAmount Total amount
      * @param usedAmount Used amount
      * @param remainingAmount Remaining amount
-     * @param imageUrl Asset image URL
+     * @param apy Annual percentage yield (precision 1e18)
      * @param isActive Whether active
      * @param addedTime Added time
      */
     struct Asset {
         uint256 assetId;
         string name;
-        string nameEn;
-        string description;
         string issuer;
         uint256 totalAmount;
         uint256 usedAmount;
         uint256 remainingAmount;
-        string imageUrl;
+        uint256 apy;
         bool isActive;
         uint256 addedTime;
     }
@@ -42,21 +38,17 @@ interface IAssetRegistry {
     
     /**
      * @dev Add asset
-     * @param name Asset name (Chinese)
-     * @param nameEn Asset name (English)
-     * @param description Asset description
+     * @param name Asset name
      * @param issuer Issuer
      * @param totalAmount Total amount
-     * @param imageUrl Asset image URL
+     * @param apy Annual percentage yield (precision 1e18)
      * @return Asset ID
      */
     function addAsset(
         string calldata name,
-        string calldata nameEn,
-        string calldata description,
         string calldata issuer,
         uint256 totalAmount,
-        string calldata imageUrl
+        uint256 apy
     ) external returns (uint256);
     
     /**
@@ -82,6 +74,13 @@ interface IAssetRegistry {
         uint256 amount,
         bool isRefund
     ) external;
+    
+    /**
+     * @dev Update asset APY
+     * @param assetId Asset ID
+     * @param apy New APY value (precision 1e18)
+     */
+    function updateAssetAPY(uint256 assetId, uint256 apy) external;
     
     /**
      * @dev Validate investment

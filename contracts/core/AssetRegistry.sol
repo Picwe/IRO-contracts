@@ -35,9 +35,9 @@ contract AssetRegistry is
     event AssetAdded(
         uint256 indexed assetId,
         string name,
-        string nameEn,
         string issuer,
-        uint256 totalAmount
+        uint256 totalAmount,
+        uint256 apy
     );
     
     event AssetStatusUpdated(uint256 indexed assetId, bool isActive);
@@ -47,6 +47,8 @@ contract AssetRegistry is
         bool isRefund,
         uint256 remainingAmount
     );
+    
+    event AssetAPYUpdated(uint256 indexed assetId, uint256 apy);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -96,44 +98,38 @@ contract AssetRegistry is
     
     /**
      * @dev Add asset
-     * @param name Asset name (Chinese)
-     * @param nameEn Asset name (English)
-     * @param description Asset description
+     * @param name Asset name
      * @param issuer Issuer
      * @param totalAmount Total amount
-     * @param imageUrl Asset image URL
+     * @param apy Annual percentage yield (precision 1e18)
      * @return Asset ID
      */
     function addAsset(
         string calldata name,
-        string calldata nameEn,
-        string calldata description,
         string calldata issuer,
         uint256 totalAmount,
-        string calldata imageUrl
+        uint256 apy
     ) external override onlyAdmin returns (uint256) {
         require(bytes(name).length > 0, "AssetRegistry: name cannot be empty");
-        require(bytes(nameEn).length > 0, "AssetRegistry: nameEn cannot be empty");
         require(bytes(issuer).length > 0, "AssetRegistry: issuer cannot be empty");
         require(totalAmount > 0, "AssetRegistry: totalAmount must be greater than 0");
+        require(apy > 0, "AssetRegistry: apy must be greater than 0");
         
         uint256 assetId = _nextAssetId++;
         Asset storage asset = _assets[assetId];
         asset.assetId = assetId;
         asset.name = name;
-        asset.nameEn = nameEn;
-        asset.description = description;
         asset.issuer = issuer;
         asset.totalAmount = totalAmount;
         asset.usedAmount = 0;
         asset.remainingAmount = totalAmount;
-        asset.imageUrl = imageUrl;
+        asset.apy = apy;
         asset.isActive = true;
         asset.addedTime = block.timestamp;
         
         _assetIds.push(assetId);
         
-        emit AssetAdded(assetId, name, nameEn, issuer, totalAmount);
+        emit AssetAdded(assetId, name, issuer, totalAmount, apy);
         
         return assetId;
     }
@@ -284,4 +280,15 @@ contract AssetRegistry is
         override
         onlyAdmin
     {}
+    
+    /**
+     * @dev Update asset APY
+     * @param assetId Asset ID
+     * @param apy New APY value (precision 1e18)
+     */
+    function updateAssetAPY(uint256 assetId, uint256 apy) external override onlyAdmin assetExists(assetId) {
+        require(apy > 0, "AssetRegistry: apy must be greater than 0");
+        _assets[assetId].apy = apy;
+        emit AssetAPYUpdated(assetId, apy);
+    }
 } 

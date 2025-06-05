@@ -55,9 +55,6 @@ contract InvestmentManager is
     // Blacklist mapping
     mapping(address => bool) private _blacklist;
     
-    // Whitelist mapping
-    mapping(address => bool) private _whitelist;
-    
     // Event definitions
     event InvestmentCreated(
         uint256 indexed investmentId,
@@ -82,7 +79,6 @@ contract InvestmentManager is
     );
     
     event BlacklistUpdated(address indexed account, bool status);
-    event WhitelistUpdated(address indexed account, bool status);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -122,9 +118,6 @@ contract InvestmentManager is
         
         // Initialize investment ID
         _nextInvestmentId = 1;
-        
-        // Add admin to whitelist
-        _whitelist[admin] = true;
     }
     
     /**
@@ -163,14 +156,6 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Ensures user is whitelisted
-     */
-    modifier onlyWhitelisted() {
-        require(_whitelist[msg.sender], "InvestmentManager: account is not whitelisted");
-        _;
-    }
-    
-    /**
      * @dev Ensures investment cooldown period has passed
      */
     modifier investmentCooldownPassed() {
@@ -199,7 +184,6 @@ contract InvestmentManager is
         whenNotPaused 
         nonReentrant 
         notBlacklisted 
-        onlyWhitelisted
         investmentCooldownPassed
         returns (uint256) 
     {
@@ -209,11 +193,8 @@ contract InvestmentManager is
             "InvestmentManager: invalid investment"
         );
         
-        // Validate period
-        require(
-            _systemParameters.getPeriodAPY(period) > 0,
-            "InvestmentManager: invalid period"
-        );
+        // Get asset information
+        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(assetId);
         
         // Calculate investment time
         uint256 startTime = block.timestamp;
@@ -229,7 +210,7 @@ contract InvestmentManager is
         investment.startTime = startTime;
         investment.endTime = endTime;
         investment.period = period;
-        investment.apy = _systemParameters.getPeriodAPY(period);
+        investment.apy = asset.apy;
         investment.status = InvestmentStatus.Active;
         investment.profit = 0;
         investment.claimedProfit = 0;
@@ -423,31 +404,17 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Add user to whitelist
+     * @dev Check if user is blacklisted
      * @param account User address
+     * @return Whether user is blacklisted
      */
-    function addToWhitelist(address account) 
+    function isBlacklisted(address account) 
         external 
+        view 
         override 
-        onlyAdmin 
+        returns (bool) 
     {
-        require(!_whitelist[account], "InvestmentManager: account already whitelisted");
-        _whitelist[account] = true;
-        emit WhitelistUpdated(account, true);
-    }
-    
-    /**
-     * @dev Remove user from whitelist
-     * @param account User address
-     */
-    function removeFromWhitelist(address account) 
-        external 
-        override 
-        onlyAdmin 
-    {
-        require(_whitelist[account], "InvestmentManager: account not whitelisted");
-        _whitelist[account] = false;
-        emit WhitelistUpdated(account, false);
+        return _blacklist[account];
     }
     
     /**
@@ -499,34 +466,6 @@ contract InvestmentManager is
         returns (uint256[] memory) 
     {
         return _userInvestments[account];
-    }
-    
-    /**
-     * @dev Check if user is blacklisted
-     * @param account User address
-     * @return Whether user is blacklisted
-     */
-    function isBlacklisted(address account) 
-        external 
-        view 
-        override 
-        returns (bool) 
-    {
-        return _blacklist[account];
-    }
-    
-    /**
-     * @dev Check if user is whitelisted
-     * @param account User address
-     * @return Whether user is whitelisted
-     */
-    function isWhitelisted(address account) 
-        external 
-        view 
-        override 
-        returns (bool) 
-    {
-        return _whitelist[account];
     }
     
     /**
