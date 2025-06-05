@@ -50,6 +50,21 @@ contract AssetRegistry is
     
     event AssetAPYUpdated(uint256 indexed assetId, uint256 apy);
     
+    struct Asset {
+        uint256 assetId;
+        string name;
+        string description;
+        address token;
+        uint256 apy;
+        uint256 maxAmount;
+        uint256 currentAmount;
+        AssetStatus status;
+        // Add investment parameters
+        uint256 minInvestment;    // Minimum investment amount
+        uint256 maxInvestment;    // Maximum investment amount
+        uint256 period;          // Fixed investment period in seconds
+    }
+    
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address

@@ -176,8 +176,7 @@ contract InvestmentManager is
      */
     function invest(
         uint256 assetId,
-        uint256 amount,
-        uint256 period
+        uint256 amount
     ) 
         external 
         override 
@@ -187,18 +186,30 @@ contract InvestmentManager is
         investmentCooldownPassed
         returns (uint256) 
     {
-        // Validate investment
+        // Get asset information first to use its fields for validation
+        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(assetId);
+        
+        // Validate investment using asset registry
         require(
             _assetRegistry.validateInvestment(assetId, amount),
             "InvestmentManager: invalid investment"
         );
         
-        // Get asset information
-        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(assetId);
+        // Validate investment amount
+        require(amount > 0, "InvestmentManager: amount must be greater than 0");
+        require(amount >= asset.minInvestment, "InvestmentManager: amount below minimum investment");
+        require(amount <= asset.maxInvestment, "InvestmentManager: amount above maximum investment");
+        
+        // Check if asset has reached its capacity
+        require(
+            asset.currentAmount + amount <= asset.maxAmount,
+            "InvestmentManager: asset investment capacity reached"
+        );
+        
         
         // Calculate investment time
         uint256 startTime = block.timestamp;
-        uint256 endTime = startTime + period;
+        uint256 endTime = startTime + asset.period;
         
         // Create investment record
         uint256 investmentId = _nextInvestmentId++;
