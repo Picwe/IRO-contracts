@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/access/Ownable.sol";
  * @dev ERC20 token contract for testing
  */
 contract ERC20Mock is ERC20, Ownable {
-    uint8 private _decimals;
+    uint8 private immutable _decimals;
 
     /**
      * @dev Constructor

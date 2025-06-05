@@ -156,13 +156,9 @@ contract ProfitPool is
     
     /**
      * @dev Ensures asset exists
-     * @param assetId Asset ID
      */
     modifier assetExists(uint256 assetId) {
-        require(
-            _assetRegistry.assetExists(assetId),
-            "ProfitPool: asset does not exist"
-        );
+        require(_assetRegistry.assetExists(assetId) && assetId > 0, "ProfitPool: asset does not exist");
         _;
     }
     

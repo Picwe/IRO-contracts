@@ -16,7 +16,7 @@ async function main() {
   // Deploy system parameters contract
   console.log("Deploying SystemParameters...");
   const SystemParameters = await ethers.getContractFactory("SystemParameters");
-  const systemParameters = await upgrades.deployProxy(SystemParameters, [deployer.address], {
+  const systemParameters = await upgrades.deployProxy(SystemParameters, [deployer.address, await weUSD.getAddress()], {
     initializer: "initialize",
     kind: "uups"
   });
@@ -50,7 +50,7 @@ async function main() {
   // Deploy asset registry contract
   console.log("Deploying AssetRegistry...");
   const AssetRegistry = await ethers.getContractFactory("AssetRegistry");
-  const assetRegistry = await upgrades.deployProxy(AssetRegistry, [deployer.address], {
+  const assetRegistry = await upgrades.deployProxy(AssetRegistry, [deployer.address, await systemParameters.getAddress()], {
     initializer: "initialize",
     kind: "uups"
   });
@@ -61,20 +61,24 @@ async function main() {
   console.log("Adding sample assets...");
   await assetRegistry.addAsset(
     "Test Bond A", 
-    "Test Bond A", 
+    "Test Inc.", 
     "This is a test bond asset", 
-    "Test Inc.",
-    ethers.parseEther("1000000"), // 1M weUSD
-    "https://example.com/image1.png"
+    ethers.parseEther("1000000"), // 1M weUSD max amount
+    ethers.parseEther("0.10"), // 10% APY
+    ethers.parseEther("100"), // 100 weUSD min investment
+    ethers.parseEther("10000"), // 10K weUSD max investment per user
+    oneMonth // 1 month period
   );
   
   await assetRegistry.addAsset(
     "Test Bond B", 
-    "Test Bond B", 
+    "Test Corp.", 
     "This is another test bond asset", 
-    "Test Corp.",
-    ethers.parseEther("2000000"), // 2M weUSD
-    "https://example.com/image2.png"
+    ethers.parseEther("2000000"), // 2M weUSD max amount
+    ethers.parseEther("0.15"), // 15% APY
+    ethers.parseEther("500"), // 500 weUSD min investment
+    ethers.parseEther("20000"), // 20K weUSD max investment per user
+    threeMonths // 3 months period
   );
   
   // Deploy profit pool contract
@@ -83,7 +87,7 @@ async function main() {
   const profitPool = await upgrades.deployProxy(ProfitPool, [
     deployer.address,
     await systemParameters.getAddress(),
-    await weUSD.getAddress()
+    await assetRegistry.getAddress()
   ], {
     initializer: "initialize",
     kind: "uups"
@@ -98,30 +102,13 @@ async function main() {
     deployer.address,
     await systemParameters.getAddress(),
     await assetRegistry.getAddress(),
-    await profitPool.getAddress(),
-    await weUSD.getAddress()
+    await profitPool.getAddress()
   ], {
     initializer: "initialize",
     kind: "uups"
   });
   await investmentManager.waitForDeployment();
   console.log("InvestmentManager deployed to:", await investmentManager.getAddress());
-  
-  // Deploy risk monitor contract
-  console.log("Deploying RiskMonitor...");
-  const RiskMonitor = await ethers.getContractFactory("RiskMonitor");
-  const riskMonitor = await upgrades.deployProxy(RiskMonitor, [
-    deployer.address,
-    await systemParameters.getAddress(),
-    await profitPool.getAddress(),
-    await investmentManager.getAddress(),
-    await weUSD.getAddress()
-  ], {
-    initializer: "initialize",
-    kind: "uups"
-  });
-  await riskMonitor.waitForDeployment();
-  console.log("RiskMonitor deployed to:", await riskMonitor.getAddress());
   
   // Set investment manager as operator for asset registry
   console.log("Setting contract permissions...");
@@ -143,7 +130,6 @@ async function main() {
   console.log("AssetRegistry:", await assetRegistry.getAddress());
   console.log("ProfitPool:", await profitPool.getAddress());
   console.log("InvestmentManager:", await investmentManager.getAddress());
-  console.log("RiskMonitor:", await riskMonitor.getAddress());
 }
 
 // Execute deployment

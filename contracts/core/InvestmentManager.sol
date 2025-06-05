@@ -165,7 +165,7 @@ contract InvestmentManager is
      * @dev Ensures investment exists
      */
     modifier investmentExists(uint256 investmentId) {
-        require(_investments[investmentId].investmentId == investmentId, "InvestmentManager: investment does not exist");
+        require(_investments[investmentId].investmentId == investmentId && investmentId > 0, "InvestmentManager: investment does not exist");
         _;
     }
     

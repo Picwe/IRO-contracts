@@ -40,7 +40,7 @@ async function main() {
   console.log("Verifying WeUSD token...");
   await run("verify:verify", {
     address: weUSDAddress,
-    constructorArguments: ["Wrapped eUSD", "weUSD", 18]
+    constructorArguments: ["weUSD", "weUSD", 18]
   });
 
   console.log("Verification completed!");

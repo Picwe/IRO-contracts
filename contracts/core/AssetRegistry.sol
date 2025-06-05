@@ -105,7 +105,7 @@ contract AssetRegistry is
      * @dev Ensures asset exists
      */
     modifier assetMustExist(uint256 assetId) {
-        require(_assets[assetId].assetId == assetId, "AssetRegistry: asset does not exist");
+        require(_assets[assetId].assetId == assetId && assetId > 0, "AssetRegistry: asset does not exist");
         _;
     }
     
@@ -330,7 +330,8 @@ contract AssetRegistry is
     ) external view override returns (Asset[] memory) {
         // First pass: count active assets
         uint256 activeCount = 0;
-        for (uint256 i = 0; i < _assetIds.length; i++) {
+        uint256 assetIdsLength = _assetIds.length;
+        for (uint256 i = 0; i < assetIdsLength; i++) {
             if (_assets[_assetIds[i]].status == AssetStatus.Active) {
                 activeCount++;
             }
@@ -354,7 +355,7 @@ contract AssetRegistry is
         uint256 currentIndex = 0;
         uint256 resultIndex = 0;
         
-        for (uint256 i = 0; i < _assetIds.length && resultIndex < actualCount; i++) {
+        for (uint256 i = 0; i < assetIdsLength && resultIndex < actualCount; i++) {
             if (_assets[_assetIds[i]].status == AssetStatus.Active) {
                 if (currentIndex >= startIndex) {
                     activeAssets[resultIndex] = _assets[_assetIds[i]];
@@ -373,7 +374,7 @@ contract AssetRegistry is
      * @return Whether asset exists
      */
     function assetExists(uint256 assetId) external view override returns (bool) {
-        return _assets[assetId].assetId == assetId;
+        return _assets[assetId].assetId == assetId && assetId > 0;
     }
     
     /**
@@ -397,6 +398,6 @@ contract AssetRegistry is
     function _authorizeUpgrade(address newImplementation)
         internal
         override
-        onlyAdmin
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {}
 } 

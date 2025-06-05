@@ -144,6 +144,12 @@ interface IInvestmentManager {
     function unpause() external;
     
     /**
+     * @dev Check if contract is paused
+     * @return True if contract is paused
+     */
+    function paused() external view returns (bool);
+    
+    /**
      * @dev Get investment information
      * @param investmentId Investment ID
      * @return Investment information
