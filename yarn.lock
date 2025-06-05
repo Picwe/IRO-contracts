@@ -1173,7 +1173,7 @@
 
 "@openzeppelin/hardhat-upgrades@^3.9.0":
   version "3.9.0"
-  resolved "https://registry.npmmirror.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-3.9.0.tgz"
+  resolved "https://registry.npmmirror.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-3.9.0.tgz#3317292f5e338012d0263bfd0f8458466c3fb0a8"
   integrity sha512-7YYBSxRnO/X+tsQkVgtz3/YbwZuQPjbjQ3m0A/8+vgQzdPfulR93NaFKgZfMonnrriXb5O/ULjIDPI+8nuqtyQ==
   dependencies:
     "@openzeppelin/defender-sdk-base-client" "^2.1.0"
