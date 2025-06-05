@@ -13,6 +13,8 @@ artifacts
 dist
 build
 
+reports
+
 # TypeChain files
 /typechain
 /typechain-types
