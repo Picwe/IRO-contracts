@@ -39,8 +39,11 @@ contract InvestmentManager is
     // Profit pool contract
     IProfitPool private _profitPool;
     
-    // weUSD token address
-    IERC20Upgradeable private _weUSD;
+    // weUSD token address - used for investments
+    IERC20Upgradeable private _investmentToken;
+    
+    // Reward token address - used for rewards
+    IERC20Upgradeable private _rewardToken;
     
     // Investment mappings
     mapping(uint256 => Investment) private _investments;
@@ -86,14 +89,16 @@ contract InvestmentManager is
      * @param systemParameters System parameters contract address
      * @param assetRegistry Asset registry contract address
      * @param profitPool Profit pool contract address
-     * @param weUSD weUSD token address
+     * @param investmentToken Investment token address
+     * @param rewardToken Reward token address
      */
     function initialize(
         address admin,
         address systemParameters,
         address assetRegistry,
         address profitPool,
-        address weUSD
+        address investmentToken,
+        address rewardToken
     ) public initializer {
         __AccessControl_init();
         __Pausable_init();
@@ -113,8 +118,11 @@ contract InvestmentManager is
         // Set profit pool contract
         _profitPool = IProfitPool(profitPool);
         
-        // Set weUSD token
-        _weUSD = IERC20Upgradeable(weUSD);
+        // Set investment token
+        _investmentToken = IERC20Upgradeable(investmentToken);
+        
+        // Set reward token
+        _rewardToken = IERC20Upgradeable(rewardToken);
         
         // Initialize investment ID
         _nextInvestmentId = 1;
@@ -236,7 +244,7 @@ contract InvestmentManager is
         _assetRegistry.updateAssetAmount(assetId, amount, false);
         
         // Transfer tokens to contract
-        _weUSD.safeTransferFrom(msg.sender, address(this), amount);
+        _investmentToken.safeTransferFrom(msg.sender, address(this), amount);
         
         emit InvestmentCreated(
             investmentId,
@@ -282,15 +290,11 @@ contract InvestmentManager is
             elapsedTime = currentTime - investment.startTime;
         }
         
-        // Improved profit calculation method to avoid overflow
+        // Calculate profit using APY/10000 as the percentage
         uint256 secondsInYear = 365 days;
         
-        // First divide APY by precision to reduce number size
-        uint256 scaledAPY = investment.apy / 1e12; // Reduce precision by 6 digits
-        
-        // Then calculate (amount * scaledAPY * elapsedTime) / (secondsInYear * 1e6)
-        // This can avoid overflow in intermediate results
-        uint256 profit = (investment.amount * scaledAPY * elapsedTime) / (secondsInYear * 1e6);
+        // Calculate (amount * APY * elapsedTime) / (secondsInYear * 10000)
+        uint256 profit = (investment.amount * investment.apy * elapsedTime) / (secondsInYear * 10000);
         
         return profit;
     }
@@ -341,13 +345,13 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Transfer profit from asset-specific profit pool to user
+        // Transfer profit from asset-specific profit pool to user using reward token
         if (profit > 0) {
             _profitPool.withdrawProfitFromAsset(investment.assetId, profit, investment.investor);
         }
         
-        // Return principal to user
-        _weUSD.safeTransfer(investment.investor, investment.amount);
+        // Return principal to user using investment token
+        _investmentToken.safeTransfer(investment.investor, investment.amount);
         
         emit ProfitClaimed(investmentId, investment.investor, profit);
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Completed);
@@ -380,8 +384,8 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Return principal to user
-        _weUSD.safeTransfer(investment.investor, investment.amount);
+        // Return principal to user using investment token
+        _investmentToken.safeTransfer(investment.investor, investment.amount);
         
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Cancelled);
     }

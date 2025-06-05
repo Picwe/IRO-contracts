@@ -36,8 +36,8 @@ contract ProfitPool is
     // Asset registry contract
     IAssetRegistry private _assetRegistry;
     
-    // weUSD token address
-    IERC20Upgradeable private _weUSD;
+    // Reward token address
+    IERC20Upgradeable private _rewardToken;
     
     // Total deposited profits
     uint256 private _totalDeposited;
@@ -57,19 +57,20 @@ contract ProfitPool is
     event ProfitWithdrawn(address indexed recipient, uint256 amount);
     event ProfitWithdrawnFromAsset(address indexed recipient, uint256 indexed assetId, uint256 amount);
     event EmergencyWithdrawal(address indexed recipient, uint256 amount);
+    event RewardTokenUpdated(address indexed oldToken, address indexed newToken);
     
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address
      * @param systemParameters System parameters contract address
      * @param assetRegistry Asset registry contract address
-     * @param weUSD weUSD token address
+     * @param rewardToken Reward token address
      */
     function initialize(
         address admin,
         address systemParameters,
         address assetRegistry,
-        address weUSD
+        address rewardToken
     ) public initializer {
         __AccessControl_init();
         __Pausable_init();
@@ -87,8 +88,8 @@ contract ProfitPool is
         // Set asset registry contract
         _assetRegistry = IAssetRegistry(assetRegistry);
         
-        // Set weUSD token
-        _weUSD = IERC20Upgradeable(weUSD);
+        // Set reward token
+        _rewardToken = IERC20Upgradeable(rewardToken);
         
         // Initialize statistics
         _totalDeposited = 0;
@@ -112,6 +113,32 @@ contract ProfitPool is
     }
     
     /**
+     * @dev Update reward token address
+     * @param newRewardToken New reward token address
+     */
+    function updateRewardToken(address newRewardToken) 
+        external 
+        onlyAdmin 
+    {
+        require(newRewardToken != address(0), "ProfitPool: new token cannot be zero address");
+        address oldToken = address(_rewardToken);
+        _rewardToken = IERC20Upgradeable(newRewardToken);
+        emit RewardTokenUpdated(oldToken, newRewardToken);
+    }
+    
+    /**
+     * @dev Get reward token address
+     * @return Reward token address
+     */
+    function getRewardToken() 
+        external 
+        view 
+        returns (address) 
+    {
+        return address(_rewardToken);
+    }
+    
+    /**
      * @dev Ensures withdrawal cooldown period has passed
      */
     modifier withdrawalCooldownPassed() {
@@ -128,7 +155,7 @@ contract ProfitPool is
      * @param amount Withdrawal amount
      */
     modifier sufficientBalance(uint256 amount) {
-        uint256 balance = _weUSD.balanceOf(address(this));
+        uint256 balance = _rewardToken.balanceOf(address(this));
         uint256 minBalance = _systemParameters.getProfitPoolMinBalance();
         require(
             balance >= amount + minBalance,
@@ -182,7 +209,7 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        _weUSD.safeTransferFrom(msg.sender, address(this), amount);
+        _rewardToken.safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDepositedForAsset(msg.sender, assetId, amount);
     }
@@ -198,7 +225,7 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        _weUSD.safeTransferFrom(msg.sender, address(this), amount);
+        _rewardToken.safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDeposited(msg.sender, amount);
     }
@@ -234,8 +261,8 @@ contract ProfitPool is
         // Update last withdrawal time
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
-        // Transfer tokens to recipient
-        _weUSD.safeTransfer(recipient, amount);
+        // Transfer reward tokens to recipient
+        _rewardToken.safeTransfer(recipient, amount);
         
         emit ProfitWithdrawnFromAsset(recipient, assetId, amount);
     }
@@ -263,8 +290,8 @@ contract ProfitPool is
         // Update last withdrawal time
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
-        // Transfer tokens to recipient
-        _weUSD.safeTransfer(recipient, amount);
+        // Transfer reward tokens to recipient
+        _rewardToken.safeTransfer(recipient, amount);
         
         emit ProfitWithdrawn(recipient, amount);
     }
@@ -281,14 +308,14 @@ contract ProfitPool is
     {
         require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         
-        uint256 balance = _weUSD.balanceOf(address(this));
+        uint256 balance = _rewardToken.balanceOf(address(this));
         require(balance > 0, "ProfitPool: no balance to withdraw");
         
         // Update statistics
         _totalWithdrawn += balance;
         
         // Transfer all tokens to recipient
-        _weUSD.safeTransfer(recipient, balance);
+        _rewardToken.safeTransfer(recipient, balance);
         
         emit EmergencyWithdrawal(recipient, balance);
     }

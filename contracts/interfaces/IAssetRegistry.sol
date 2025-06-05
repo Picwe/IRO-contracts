@@ -14,7 +14,7 @@ interface IAssetRegistry {
      * @param totalAmount Total amount
      * @param usedAmount Used amount
      * @param remainingAmount Remaining amount
-     * @param apy Annual percentage yield (precision 1e18)
+     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param isActive Whether active
      * @param addedTime Added time
      */
@@ -41,7 +41,7 @@ interface IAssetRegistry {
      * @param name Asset name
      * @param issuer Issuer
      * @param totalAmount Total amount
-     * @param apy Annual percentage yield (precision 1e18)
+     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @return Asset ID
      */
     function addAsset(
@@ -78,7 +78,7 @@ interface IAssetRegistry {
     /**
      * @dev Update asset APY
      * @param assetId Asset ID
-     * @param apy New APY value (precision 1e18)
+     * @param apy New APY value (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      */
     function updateAssetAPY(uint256 assetId, uint256 apy) external;
     

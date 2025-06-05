@@ -9,14 +9,14 @@ interface ISystemParameters {
     /**
      * @dev Set APY for a period
      * @param period Period (in seconds)
-     * @param apy Annual percentage yield (precision 1e18)
+     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      */
     function setPeriodAPY(uint256 period, uint256 apy) external;
     
     /**
      * @dev Get APY for a period
      * @param period Period (in seconds)
-     * @return Annual percentage yield
+     * @return Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      */
     function getPeriodAPY(uint256 period) external view returns (uint256);
     

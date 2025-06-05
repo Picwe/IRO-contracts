@@ -10,6 +10,18 @@ interface IProfitPool {
     function OPERATOR_ROLE() external view returns (bytes32);
     
     /**
+     * @dev Update reward token address
+     * @param newRewardToken New reward token address
+     */
+    function updateRewardToken(address newRewardToken) external;
+    
+    /**
+     * @dev Get reward token address
+     * @return Reward token address
+     */
+    function getRewardToken() external view returns (address);
+    
+    /**
      * @dev Deposit profit to a specific asset's profit pool
      * @param assetId Asset ID
      * @param amount Profit amount

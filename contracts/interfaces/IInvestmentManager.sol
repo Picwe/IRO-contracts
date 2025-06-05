@@ -29,7 +29,7 @@ interface IInvestmentManager {
      * @param startTime Start time
      * @param endTime End time
      * @param period Investment period (in seconds)
-     * @param apy APY (based on 1e18)
+     * @param apy APY (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param status Investment status
      * @param profit Profit amount
      * @param claimedProfit Claimed profit
