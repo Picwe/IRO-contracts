@@ -36,9 +36,6 @@ contract ProfitPool is
     // Asset registry contract
     IAssetRegistry private _assetRegistry;
     
-    // Default reward token address
-    IERC20Upgradeable private _rewardToken;
-    
     // Total deposited profits
     uint256 private _totalDeposited;
     
@@ -48,35 +45,26 @@ contract ProfitPool is
     // Last withdrawal time mapping
     mapping(address => uint256) private _lastWithdrawalTime;
     
-    // Asset-specific profit pool balances for default token
+    // Asset-specific profit pool balances
     mapping(uint256 => uint256) private _assetProfitPools;
-    
-    // Asset-specific profit pool balances for custom tokens
-    // assetId => token => balance
-    mapping(uint256 => mapping(address => uint256)) private _assetTokenProfitPools;
     
     // Event definitions
     event ProfitDeposited(address indexed depositor, uint256 amount);
     event ProfitDepositedForAsset(address indexed depositor, uint256 indexed assetId, uint256 amount);
-    event ProfitDepositedForAssetWithToken(address indexed depositor, uint256 indexed assetId, uint256 amount, address token);
     event ProfitWithdrawn(address indexed recipient, uint256 amount);
     event ProfitWithdrawnFromAsset(address indexed recipient, uint256 indexed assetId, uint256 amount);
-    event ProfitWithdrawnFromAssetWithToken(address indexed recipient, uint256 indexed assetId, uint256 amount, address token);
     event EmergencyWithdrawal(address indexed recipient, uint256 amount);
-    event RewardTokenUpdated(address indexed oldToken, address indexed newToken);
     
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address
      * @param systemParameters System parameters contract address
      * @param assetRegistry Asset registry contract address
-     * @param rewardToken Reward token address
      */
     function initialize(
         address admin,
         address systemParameters,
-        address assetRegistry,
-        address rewardToken
+        address assetRegistry
     ) public initializer {
         __AccessControl_init();
         __Pausable_init();
@@ -93,9 +81,6 @@ contract ProfitPool is
         
         // Set asset registry contract
         _assetRegistry = IAssetRegistry(assetRegistry);
-        
-        // Set reward token
-        _rewardToken = IERC20Upgradeable(rewardToken);
         
         // Initialize statistics
         _totalDeposited = 0;
@@ -119,20 +104,6 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Update reward token address
-     * @param newRewardToken New reward token address
-     */
-    function updateRewardToken(address newRewardToken) 
-        external 
-        onlyAdmin 
-    {
-        require(newRewardToken != address(0), "ProfitPool: new token cannot be zero address");
-        address oldToken = address(_rewardToken);
-        _rewardToken = IERC20Upgradeable(newRewardToken);
-        emit RewardTokenUpdated(oldToken, newRewardToken);
-    }
-    
-    /**
      * @dev Get reward token address
      * @return Reward token address
      */
@@ -141,7 +112,7 @@ contract ProfitPool is
         view 
         returns (address) 
     {
-        return address(_rewardToken);
+        return _systemParameters.getPlatformToken();
     }
     
     /**
@@ -161,7 +132,7 @@ contract ProfitPool is
      * @param amount Withdrawal amount
      */
     modifier sufficientBalance(uint256 amount) {
-        uint256 balance = _rewardToken.balanceOf(address(this));
+        uint256 balance = IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
         uint256 minBalance = _systemParameters.getProfitPoolMinBalance();
         require(
             balance >= amount + minBalance,
@@ -184,20 +155,6 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Ensures asset profit pool has sufficient balance for a specific token
-     * @param assetId Asset ID
-     * @param amount Withdrawal amount
-     * @param token Token address
-     */
-    modifier sufficientAssetTokenBalance(uint256 assetId, uint256 amount, address token) {
-        require(
-            _assetTokenProfitPools[assetId][token] >= amount,
-            "ProfitPool: insufficient asset token profit pool balance"
-        );
-        _;
-    }
-    
-    /**
      * @dev Ensures asset exists
      * @param assetId Asset ID
      */
@@ -210,7 +167,7 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Deposit profit to asset-specific profit pool using default token
+     * @dev Deposit profit to asset-specific profit pool
      * @param assetId Asset ID
      * @param amount Profit amount
      */
@@ -229,36 +186,9 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        _rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDepositedForAsset(msg.sender, assetId, amount);
-    }
-    
-    /**
-     * @dev Deposit profit to asset-specific profit pool with a specific token
-     * @param assetId Asset ID
-     * @param amount Profit amount
-     * @param token Token address
-     */
-    function depositProfitForAssetWithToken(uint256 assetId, uint256 amount, address token) 
-        external 
-        override 
-        nonReentrant 
-        assetExists(assetId) 
-    {
-        require(amount > 0, "ProfitPool: amount must be greater than 0");
-        require(token != address(0), "ProfitPool: token cannot be zero address");
-        
-        // Update asset profit pool balance for the specific token
-        _assetTokenProfitPools[assetId][token] += amount;
-        
-        // Update statistics (still track in total)
-        _totalDeposited += amount;
-        
-        // Transfer tokens to contract
-        IERC20Upgradeable(token).safeTransferFrom(msg.sender, address(this), amount);
-        
-        emit ProfitDepositedForAssetWithToken(msg.sender, assetId, amount, token);
     }
     
     /**
@@ -272,13 +202,13 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        _rewardToken.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDeposited(msg.sender, amount);
     }
     
     /**
-     * @dev Withdraw profit from asset-specific profit pool using default token
+     * @dev Withdraw profit from asset-specific profit pool
      * @param assetId Asset ID
      * @param amount Profit amount
      */
@@ -306,54 +236,16 @@ contract ProfitPool is
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
         // Transfer reward tokens to msg.sender
-        _rewardToken.safeTransfer(msg.sender, amount);
+        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
         
         emit ProfitWithdrawnFromAsset(msg.sender, assetId, amount);
     }
     
     /**
-     * @dev Withdraw profit from asset-specific profit pool with a specific token
-     * @param assetId Asset ID
-     * @param amount Profit amount
-     * @param token Token address
-     */
-    function withdrawProfitFromAssetWithToken(
-        uint256 assetId, 
-        uint256 amount,
-        address token
-    ) 
-        external 
-        override 
-        whenNotPaused 
-        nonReentrant 
-        onlyOperator 
-        assetExists(assetId)
-        sufficientAssetTokenBalance(assetId, amount, token)
-    {
-        require(amount > 0, "ProfitPool: amount must be greater than 0");
-        require(token != address(0), "ProfitPool: token cannot be zero address");
-        
-        // Update asset profit pool balance for the specific token
-        _assetTokenProfitPools[assetId][token] -= amount;
-        
-        // Update statistics
-        _totalWithdrawn += amount;
-        
-        // Update last withdrawal time
-        _lastWithdrawalTime[msg.sender] = block.timestamp;
-        
-        // Transfer reward tokens to msg.sender
-        IERC20Upgradeable(token).safeTransfer(msg.sender, amount);
-        
-        emit ProfitWithdrawnFromAssetWithToken(msg.sender, assetId, amount, token);
-    }
-    
-    /**
      * @dev Withdraw profit
      * @param amount Profit amount
-     * @param recipient Recipient address
      */
-    function withdrawProfit(uint256 amount, address recipient) 
+    function withdrawProfit(uint256 amount) 
         external 
         override 
         whenNotPaused 
@@ -363,7 +255,6 @@ contract ProfitPool is
         sufficientBalance(amount)
     {
         require(amount > 0, "ProfitPool: amount must be greater than 0");
-        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         
         // Update statistics
         _totalWithdrawn += amount;
@@ -371,10 +262,10 @@ contract ProfitPool is
         // Update last withdrawal time
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
-        // Transfer reward tokens to recipient
-        _rewardToken.safeTransfer(recipient, amount);
+        // Transfer reward tokens to msg.sender
+        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
         
-        emit ProfitWithdrawn(recipient, amount);
+        emit ProfitWithdrawn(msg.sender, amount);
     }
     
     /**
@@ -389,20 +280,20 @@ contract ProfitPool is
     {
         require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         
-        uint256 balance = _rewardToken.balanceOf(address(this));
+        uint256 balance = IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
         require(balance > 0, "ProfitPool: no balance to withdraw");
         
         // Update statistics
         _totalWithdrawn += balance;
         
         // Transfer all tokens to recipient
-        _rewardToken.safeTransfer(recipient, balance);
+        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(recipient, balance);
         
         emit EmergencyWithdrawal(recipient, balance);
     }
     
     /**
-     * @dev Get asset-specific profit pool balance for default token
+     * @dev Get asset-specific profit pool balance
      * @param assetId Asset ID
      * @return Balance amount
      */
@@ -416,21 +307,6 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Get asset-specific profit pool balance for a specific token
-     * @param assetId Asset ID
-     * @param token Token address
-     * @return Balance amount
-     */
-    function getAssetBalanceWithToken(uint256 assetId, address token) 
-        external 
-        view 
-        override 
-        returns (uint256) 
-    {
-        return _assetTokenProfitPools[assetId][token];
-    }
-    
-    /**
      * @dev Get profit pool balance
      * @return Balance amount
      */
@@ -440,7 +316,7 @@ contract ProfitPool is
         override 
         returns (uint256) 
     {
-        return _rewardToken.balanceOf(address(this));
+        return IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
     }
     
     /**

@@ -36,25 +36,35 @@ contract SystemParameters is
     // Profit withdrawal cooldown (in seconds)
     uint256 private _profitWithdrawalCooldown;
     
+    // Platform weUSD token address
+    address private _platformToken;
+    
     // Event definitions
     event MinInvestmentAmountUpdated(uint256 amount);
     event MaxInvestmentAmountUpdated(uint256 amount);
     event InvestmentCooldownUpdated(uint256 cooldown);
     event ProfitPoolMinBalanceUpdated(uint256 amount);
     event ProfitWithdrawalCooldownUpdated(uint256 cooldown);
+    event PlatformTokenUpdated(address token);
     
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address
+     * @param platformToken Platform weUSD token address
      */
-    function initialize(address admin) public initializer {
+    function initialize(address admin, address platformToken) public initializer {
         __AccessControl_init();
         __Pausable_init();
         __UUPSUpgradeable_init();
         
+        require(platformToken != address(0), "SystemParameters: platformToken cannot be zero address");
+        
         // Set roles
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
+        
+        // Set platform token
+        _platformToken = platformToken;
         
         // Set default parameters
         _minInvestmentAmount = 10 * 10**18; // 10 weUSD
@@ -158,6 +168,24 @@ contract SystemParameters is
      */
     function getProfitWithdrawalCooldown() external view override returns (uint256) {
         return _profitWithdrawalCooldown;
+    }
+    
+    /**
+     * @dev Set platform token address
+     * @param token Platform token address
+     */
+    function setPlatformToken(address token) external override onlyAdmin {
+        require(token != address(0), "SystemParameters: token cannot be zero address");
+        _platformToken = token;
+        emit PlatformTokenUpdated(token);
+    }
+    
+    /**
+     * @dev Get platform token address
+     * @return Platform token address
+     */
+    function getPlatformToken() external view override returns (address) {
+        return _platformToken;
     }
     
     /**

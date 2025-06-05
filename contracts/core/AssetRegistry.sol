@@ -37,7 +37,6 @@ contract AssetRegistry is
         string name,
         string issuer,
         string description,
-        address token,
         uint256 maxAmount,
         uint256 apy,
         uint256 minInvestment,
@@ -67,8 +66,6 @@ contract AssetRegistry is
         string name;
         string issuer;
         string description;
-        address token;
-        address investmentToken;
         uint256 apy;
         uint256 maxAmount;
         uint256 currentAmount;
@@ -130,8 +127,6 @@ contract AssetRegistry is
      * @param name Asset name
      * @param issuer Issuer
      * @param description Asset description
-     * @param token Reward token address
-     * @param investmentToken Investment token address（ use default token set this to zero address ）
      * @param maxAmount Maximum investment amount
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param minInvestment Minimum investment amount
@@ -143,8 +138,6 @@ contract AssetRegistry is
         string calldata name,
         string calldata issuer,
         string calldata description,
-        address token,
-        address investmentToken,
         uint256 maxAmount,
         uint256 apy,
         uint256 minInvestment,
@@ -155,8 +148,6 @@ contract AssetRegistry is
         require(bytes(issuer).length > 0, "AssetRegistry: issuer cannot be empty");
         require(maxAmount > 0, "AssetRegistry: maxAmount must be greater than 0");
         require(apy > 0, "AssetRegistry: apy must be greater than 0");
-        require(token != address(0), "AssetRegistry: token cannot be zero address");
-        require(investmentToken != address(0), "AssetRegistry: investmentToken cannot be zero address");
         require(period > 0, "AssetRegistry: period must be greater than 0");
         require(minInvestment > 0, "AssetRegistry: minInvestment must be greater than 0");
         require(maxInvestment >= minInvestment, "AssetRegistry: maxInvestment must be >= minInvestment");
@@ -168,8 +159,6 @@ contract AssetRegistry is
         asset.name = name;
         asset.issuer = issuer;
         asset.description = description;
-        asset.token = token;
-        asset.investmentToken = investmentToken;
         asset.maxAmount = maxAmount;
         asset.currentAmount = 0;
         asset.apy = apy;
@@ -186,7 +175,6 @@ contract AssetRegistry is
             name, 
             issuer, 
             description, 
-            token, 
             maxAmount, 
             apy, 
             minInvestment, 

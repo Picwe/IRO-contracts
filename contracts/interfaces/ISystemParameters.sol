@@ -79,4 +79,16 @@ interface ISystemParameters {
      * @return Cooldown period (in seconds)
      */
     function getProfitWithdrawalCooldown() external view returns (uint256);
+    
+    /**
+     * @dev Set platform token address
+     * @param token Platform token address
+     */
+    function setPlatformToken(address token) external;
+    
+    /**
+     * @dev Get platform token address
+     * @return Platform token address
+     */
+    function getPlatformToken() external view returns (address);
 } 

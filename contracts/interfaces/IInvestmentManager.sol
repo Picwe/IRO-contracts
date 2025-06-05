@@ -67,12 +67,6 @@ interface IInvestmentManager {
     }
     
     /**
-     * @dev Update investment token address
-     * @param newInvestmentToken New investment token address
-     */
-    function updateInvestmentToken(address newInvestmentToken) external;
-    
-    /**
      * @dev Get investment token address
      * @return Investment token address
      */

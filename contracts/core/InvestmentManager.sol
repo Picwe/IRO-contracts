@@ -39,9 +39,6 @@ contract InvestmentManager is
     // Profit pool contract
     IProfitPool private _profitPool;
     
-    // weUSD token address - used for investments（default invest token）
-    IERC20Upgradeable private _investmentToken;
-    
     // Investment mappings
     mapping(uint256 => Investment) private _investments;
     uint256 private _nextInvestmentId;
@@ -80,22 +77,18 @@ contract InvestmentManager is
     
     event BlacklistUpdated(address indexed account, bool status);
     
-    event InvestmentTokenUpdated(address indexed oldToken, address indexed newToken);
-    
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address
      * @param systemParameters System parameters contract address
      * @param assetRegistry Asset registry contract address
      * @param profitPool Profit pool contract address
-     * @param investmentToken Investment token address
      */
     function initialize(
         address admin,
         address systemParameters,
         address assetRegistry,
-        address profitPool,
-        address investmentToken
+        address profitPool
     ) public initializer {
         __AccessControl_init();
         __Pausable_init();
@@ -115,25 +108,8 @@ contract InvestmentManager is
         // Set profit pool contract
         _profitPool = IProfitPool(profitPool);
         
-        // Set investment token
-        _investmentToken = IERC20Upgradeable(investmentToken);
-        
         // Initialize investment ID
         _nextInvestmentId = 1;
-    }
-    
-    /**
-     * @dev Update investment token address
-     * @param newInvestmentToken New investment token address
-     */
-    function updateInvestmentToken(address newInvestmentToken) 
-        external 
-        onlyAdmin 
-    {
-        require(newInvestmentToken != address(0), "InvestmentManager: new token cannot be zero address");
-        address oldToken = address(_investmentToken);
-        _investmentToken = IERC20Upgradeable(newInvestmentToken);
-        emit InvestmentTokenUpdated(oldToken, newInvestmentToken);
     }
     
     /**
@@ -145,7 +121,7 @@ contract InvestmentManager is
         view 
         returns (address) 
     {
-        return address(_investmentToken);
+        return _systemParameters.getPlatformToken();
     }
     
     /**
@@ -274,14 +250,8 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(assetId, amount, false);
         
-        // Use asset-specific investment token or fallback to default
-        if (asset.investmentToken != address(0)) {
-            // Transfer asset-specific investment tokens to contract
-            IERC20Upgradeable(asset.investmentToken).safeTransferFrom(msg.sender, address(this), amount);
-        } else {
-            // Transfer default investment tokens to contract
-            _investmentToken.safeTransferFrom(msg.sender, address(this), amount);
-        }
+        // Transfer platform tokens to contract
+        IERC20Upgradeable(getInvestmentToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit InvestmentCreated(
             investmentId,
@@ -365,24 +335,14 @@ contract InvestmentManager is
             "InvestmentManager: investment has not matured"
         );
         
-        // Get asset information to get the reward token
-        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(investment.assetId);
-        
         // Calculate profit
         uint256 profit = calculateProfit(investmentId);
         
         // Ensure asset-specific profit pool has enough balance
-        if (asset.token != address(0)) {
-            require(
-                _profitPool.getAssetBalanceWithToken(investment.assetId, asset.token) >= profit,
-                "InvestmentManager: insufficient asset profit pool balance"
-            );
-        } else {
-            require(
-                _profitPool.getAssetBalance(investment.assetId) >= profit,
-                "InvestmentManager: insufficient asset profit pool balance"
-            );
-        }
+        require(
+            _profitPool.getAssetBalance(investment.assetId) >= profit,
+            "InvestmentManager: insufficient asset profit pool balance"
+        );
         
         // Update investment status
         investment.status = InvestmentStatus.Completed;
@@ -392,33 +352,16 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Transfer profit from asset-specific profit pool to user using asset's reward token
+        // Transfer profit from asset-specific profit pool to user
         if (profit > 0) {
-            // Check if asset has a specific reward token
-            if (asset.token != address(0)) {
-                // Use asset-specific reward token
-                _profitPool.withdrawProfitFromAssetWithToken(
-                    investment.assetId, 
-                    profit, 
-                    asset.token
-                );
-            } else {
-                // Use default reward token from profit pool
-                _profitPool.withdrawProfitFromAsset(
-                    investment.assetId, 
-                    profit
-                );
-            }
+            _profitPool.withdrawProfitFromAsset(
+                investment.assetId, 
+                profit
+            );
         }
         
-        // Return principal to user using asset-specific investment token or fallback to default
-        if (asset.investmentToken != address(0)) {
-            // Return principal using asset-specific investment token
-            IERC20Upgradeable(asset.investmentToken).safeTransfer(investment.investor, investment.amount);
-        } else {
-            // Return principal using default investment token
-            _investmentToken.safeTransfer(investment.investor, investment.amount);
-        }
+        // Return principal to user using platform token
+        IERC20Upgradeable(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
         
         emit ProfitClaimed(investmentId, investment.investor, profit);
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Completed);
@@ -445,23 +388,14 @@ contract InvestmentManager is
             "InvestmentManager: investment is not active"
         );
         
-        // Get asset information to get the investment token
-        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(investment.assetId);
-        
         // Update investment status
         investment.status = InvestmentStatus.Cancelled;
         
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Return principal to user using asset-specific investment token or fallback to default
-        if (asset.investmentToken != address(0)) {
-            // Return principal using asset-specific investment token
-            IERC20Upgradeable(asset.investmentToken).safeTransfer(investment.investor, investment.amount);
-        } else {
-            // Return principal using default investment token
-            _investmentToken.safeTransfer(investment.investor, investment.amount);
-        }
+        // Return principal to user using platform token
+        IERC20Upgradeable(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
         
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Cancelled);
     }

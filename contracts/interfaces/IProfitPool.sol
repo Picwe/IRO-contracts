@@ -10,12 +10,6 @@ interface IProfitPool {
     function OPERATOR_ROLE() external view returns (bytes32);
     
     /**
-     * @dev Update reward token address
-     * @param newRewardToken New reward token address
-     */
-    function updateRewardToken(address newRewardToken) external;
-    
-    /**
      * @dev Get reward token address
      * @return Reward token address
      */
@@ -27,14 +21,6 @@ interface IProfitPool {
      * @param amount Profit amount
      */
     function depositProfitForAsset(uint256 assetId, uint256 amount) external;
-    
-    /**
-     * @dev Deposit profit to a specific asset's profit pool with a specific token
-     * @param assetId Asset ID
-     * @param amount Profit amount
-     * @param token Token address
-     */
-    function depositProfitForAssetWithToken(uint256 assetId, uint256 amount, address token) external;
     
     /**
      * @dev Deposit profit
@@ -50,19 +36,10 @@ interface IProfitPool {
     function withdrawProfitFromAsset(uint256 assetId, uint256 amount) external;
     
     /**
-     * @dev Withdraw profit from a specific asset's profit pool with a specific token
-     * @param assetId Asset ID
-     * @param amount Profit amount
-     * @param token Token address
-     */
-    function withdrawProfitFromAssetWithToken(uint256 assetId, uint256 amount, address token) external;
-    
-    /**
      * @dev Withdraw profit
      * @param amount Profit amount
-     * @param recipient Recipient address
      */
-    function withdrawProfit(uint256 amount, address recipient) external;
+    function withdrawProfit(uint256 amount) external;
     
     /**
      * @dev Emergency withdraw
@@ -76,14 +53,6 @@ interface IProfitPool {
      * @return Profit pool balance
      */
     function getAssetBalance(uint256 assetId) external view returns (uint256);
-    
-    /**
-     * @dev Get specific asset profit pool balance for a token
-     * @param assetId Asset ID
-     * @param token Token address
-     * @return Profit pool balance
-     */
-    function getAssetBalanceWithToken(uint256 assetId, address token) external view returns (uint256);
     
     /**
      * @dev Get profit pool balance
