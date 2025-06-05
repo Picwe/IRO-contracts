@@ -125,18 +125,6 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Get reward token address from profit pool
-     * @return Reward token address
-     */
-    function getRewardToken() 
-        external 
-        view 
-        returns (address) 
-    {
-        return _profitPool.getRewardToken();
-    }
-    
-    /**
      * @dev Ensures caller has admin role
      */
     modifier onlyAdmin() {
