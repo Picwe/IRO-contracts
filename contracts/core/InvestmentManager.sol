@@ -39,7 +39,7 @@ contract InvestmentManager is
     // Profit pool contract
     IProfitPool private _profitPool;
     
-    // weUSD token address - used for investments
+    // weUSD token address - used for investments（default invest token）
     IERC20Upgradeable private _investmentToken;
     
     // Investment mappings

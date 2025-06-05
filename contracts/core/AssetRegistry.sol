@@ -131,7 +131,7 @@ contract AssetRegistry is
      * @param issuer Issuer
      * @param description Asset description
      * @param token Reward token address
-     * @param investmentToken Investment token address
+     * @param investmentToken Investment token address（ use default token set this to zero address ）
      * @param maxAmount Maximum investment amount
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param minInvestment Minimum investment amount
