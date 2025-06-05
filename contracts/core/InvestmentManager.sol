@@ -387,15 +387,13 @@ contract InvestmentManager is
                 _profitPool.withdrawProfitFromAssetWithToken(
                     investment.assetId, 
                     profit, 
-                    investment.investor, 
                     asset.token
                 );
             } else {
                 // Use default reward token from profit pool
                 _profitPool.withdrawProfitFromAsset(
                     investment.assetId, 
-                    profit, 
-                    investment.investor
+                    profit
                 );
             }
         }

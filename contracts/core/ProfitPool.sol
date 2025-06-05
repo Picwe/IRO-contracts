@@ -281,12 +281,10 @@ contract ProfitPool is
      * @dev Withdraw profit from asset-specific profit pool using default token
      * @param assetId Asset ID
      * @param amount Profit amount
-     * @param recipient Recipient address
      */
     function withdrawProfitFromAsset(
         uint256 assetId, 
-        uint256 amount, 
-        address recipient
+        uint256 amount
     ) 
         external 
         override 
@@ -297,7 +295,6 @@ contract ProfitPool is
         sufficientAssetBalance(assetId, amount)
     {
         require(amount > 0, "ProfitPool: amount must be greater than 0");
-        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         
         // Update asset profit pool balance
         _assetProfitPools[assetId] -= amount;
@@ -308,23 +305,21 @@ contract ProfitPool is
         // Update last withdrawal time
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
-        // Transfer reward tokens to recipient
-        _rewardToken.safeTransfer(recipient, amount);
+        // Transfer reward tokens to msg.sender
+        _rewardToken.safeTransfer(msg.sender, amount);
         
-        emit ProfitWithdrawnFromAsset(recipient, assetId, amount);
+        emit ProfitWithdrawnFromAsset(msg.sender, assetId, amount);
     }
     
     /**
      * @dev Withdraw profit from asset-specific profit pool with a specific token
      * @param assetId Asset ID
      * @param amount Profit amount
-     * @param recipient Recipient address
      * @param token Token address
      */
     function withdrawProfitFromAssetWithToken(
         uint256 assetId, 
-        uint256 amount, 
-        address recipient,
+        uint256 amount,
         address token
     ) 
         external 
@@ -336,7 +331,6 @@ contract ProfitPool is
         sufficientAssetTokenBalance(assetId, amount, token)
     {
         require(amount > 0, "ProfitPool: amount must be greater than 0");
-        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         require(token != address(0), "ProfitPool: token cannot be zero address");
         
         // Update asset profit pool balance for the specific token
@@ -348,10 +342,10 @@ contract ProfitPool is
         // Update last withdrawal time
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
-        // Transfer reward tokens to recipient
-        IERC20Upgradeable(token).safeTransfer(recipient, amount);
+        // Transfer reward tokens to msg.sender
+        IERC20Upgradeable(token).safeTransfer(msg.sender, amount);
         
-        emit ProfitWithdrawnFromAssetWithToken(recipient, assetId, amount, token);
+        emit ProfitWithdrawnFromAssetWithToken(msg.sender, assetId, amount, token);
     }
     
     /**
