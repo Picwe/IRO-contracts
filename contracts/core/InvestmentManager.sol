@@ -46,8 +46,8 @@ contract InvestmentManager is
     // User investment mappings
     mapping(address => uint256[]) private _userInvestments;
     
-    // User last investment time mapping
-    mapping(address => uint256) private _lastInvestmentTime;
+    // User last redemption time mapping
+    mapping(address => uint256) private _lastRedemptionTime;
     
     // Blacklist mapping
     mapping(address => bool) private _blacklist;
@@ -172,13 +172,13 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Ensures investment cooldown period has passed
+     * @dev Ensures redemption cooldown period has passed
      */
-    modifier investmentCooldownPassed() {
+    modifier redemptionCooldownPassed() {
         uint256 cooldown = _systemParameters.getInvestmentCooldown();
         require(
-            block.timestamp - _lastInvestmentTime[msg.sender] >= cooldown,
-            "InvestmentManager: investment cooldown not passed"
+            block.timestamp - _lastRedemptionTime[msg.sender] >= cooldown,
+            "InvestmentManager: redemption cooldown not passed"
         );
         _;
     }
@@ -198,11 +198,13 @@ contract InvestmentManager is
         whenNotPaused 
         nonReentrant 
         notBlacklisted 
-        investmentCooldownPassed
         returns (uint256) 
     {
         // Get asset information first to use its fields for validation
         IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(assetId);
+        
+        // Validate investment amount
+        require(amount > 0, "InvestmentManager: amount must be greater than 0");
         
         // Validate investment using asset registry
         require(
@@ -210,16 +212,6 @@ contract InvestmentManager is
             "InvestmentManager: invalid investment"
         );
         
-        // Validate investment amount
-        require(amount > 0, "InvestmentManager: amount must be greater than 0");
-        require(amount >= asset.minInvestment, "InvestmentManager: amount below minimum investment");
-        require(amount <= asset.maxInvestment, "InvestmentManager: amount above maximum investment");
-        
-        // Check if asset has reached its capacity
-        require(
-            asset.currentAmount + amount <= asset.maxAmount,
-            "InvestmentManager: asset investment capacity reached"
-        );
         
         
         // Calculate investment time
@@ -243,9 +235,6 @@ contract InvestmentManager is
         
         // Update user investment list
         _userInvestments[msg.sender].push(investmentId);
-        
-        // Update last investment time
-        _lastInvestmentTime[msg.sender] = block.timestamp;
         
         // Update asset balance
         _assetRegistry.updateAssetAmount(assetId, amount, false);
@@ -319,6 +308,7 @@ contract InvestmentManager is
         investmentExists(investmentId) 
         onlyInvestmentOwner(investmentId)
         notBlacklisted
+        redemptionCooldownPassed
         returns (uint256) 
     {
         Investment storage investment = _investments[investmentId];
@@ -362,6 +352,9 @@ contract InvestmentManager is
         
         // Return principal to user using platform token
         IERC20Upgradeable(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
+        
+        // Update last redemption time
+        _lastRedemptionTime[msg.sender] = block.timestamp;
         
         emit ProfitClaimed(investmentId, investment.investor, profit);
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Completed);

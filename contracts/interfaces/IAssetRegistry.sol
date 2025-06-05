@@ -149,10 +149,15 @@ interface IAssetRegistry {
     ) external view returns (Asset[] memory);
     
     /**
-     * @dev Get all active asset list
+     * @dev Get active asset list with pagination
+     * @param startIndex Start index
+     * @param count Count
      * @return Active asset list
      */
-    function getActiveAssets() external view returns (Asset[] memory);
+    function getActiveAssets(
+        uint256 startIndex,
+        uint256 count
+    ) external view returns (Asset[] memory);
     
     /**
      * @dev Check if asset exists
