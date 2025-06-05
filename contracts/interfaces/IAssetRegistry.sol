@@ -23,6 +23,7 @@ interface IAssetRegistry {
      * @param issuer Issuer
      * @param description Asset description
      * @param token Reward token address for this asset
+     * @param investmentToken Investment token address for this asset
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param maxAmount Maximum total amount for investment
      * @param currentAmount Current invested amount
@@ -38,6 +39,7 @@ interface IAssetRegistry {
         string issuer;
         string description;
         address token;
+        address investmentToken;
         uint256 apy;
         uint256 maxAmount;
         uint256 currentAmount;
@@ -60,6 +62,7 @@ interface IAssetRegistry {
      * @param issuer Issuer
      * @param description Asset description
      * @param token Reward token address
+     * @param investmentToken Investment token address
      * @param maxAmount Maximum investment amount
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param minInvestment Minimum investment amount
@@ -72,6 +75,7 @@ interface IAssetRegistry {
         string calldata issuer,
         string calldata description,
         address token,
+        address investmentToken,
         uint256 maxAmount,
         uint256 apy,
         uint256 minInvestment,
@@ -116,6 +120,13 @@ interface IAssetRegistry {
      * @param token New reward token address
      */
     function updateAssetToken(uint256 assetId, address token) external;
+    
+    /**
+     * @dev Update asset investment token
+     * @param assetId Asset ID
+     * @param investmentToken New investment token address
+     */
+    function updateAssetInvestmentToken(uint256 assetId, address investmentToken) external;
     
     /**
      * @dev Update asset period

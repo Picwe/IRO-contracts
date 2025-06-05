@@ -274,8 +274,14 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(assetId, amount, false);
         
-        // Transfer tokens to contract
-        _investmentToken.safeTransferFrom(msg.sender, address(this), amount);
+        // Use asset-specific investment token or fallback to default
+        if (asset.investmentToken != address(0)) {
+            // Transfer asset-specific investment tokens to contract
+            IERC20Upgradeable(asset.investmentToken).safeTransferFrom(msg.sender, address(this), amount);
+        } else {
+            // Transfer default investment tokens to contract
+            _investmentToken.safeTransferFrom(msg.sender, address(this), amount);
+        }
         
         emit InvestmentCreated(
             investmentId,
@@ -366,10 +372,17 @@ contract InvestmentManager is
         uint256 profit = calculateProfit(investmentId);
         
         // Ensure asset-specific profit pool has enough balance
-        require(
-            _profitPool.getAssetBalance(investment.assetId) >= profit,
-            "InvestmentManager: insufficient asset profit pool balance"
-        );
+        if (asset.token != address(0)) {
+            require(
+                _profitPool.getAssetBalanceWithToken(investment.assetId, asset.token) >= profit,
+                "InvestmentManager: insufficient asset profit pool balance"
+            );
+        } else {
+            require(
+                _profitPool.getAssetBalance(investment.assetId) >= profit,
+                "InvestmentManager: insufficient asset profit pool balance"
+            );
+        }
         
         // Update investment status
         investment.status = InvestmentStatus.Completed;
@@ -398,8 +411,14 @@ contract InvestmentManager is
             }
         }
         
-        // Return principal to user using investment token
-        _investmentToken.safeTransfer(investment.investor, investment.amount);
+        // Return principal to user using asset-specific investment token or fallback to default
+        if (asset.investmentToken != address(0)) {
+            // Return principal using asset-specific investment token
+            IERC20Upgradeable(asset.investmentToken).safeTransfer(investment.investor, investment.amount);
+        } else {
+            // Return principal using default investment token
+            _investmentToken.safeTransfer(investment.investor, investment.amount);
+        }
         
         emit ProfitClaimed(investmentId, investment.investor, profit);
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Completed);
@@ -426,14 +445,23 @@ contract InvestmentManager is
             "InvestmentManager: investment is not active"
         );
         
+        // Get asset information to get the investment token
+        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(investment.assetId);
+        
         // Update investment status
         investment.status = InvestmentStatus.Cancelled;
         
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Return principal to user using investment token
-        _investmentToken.safeTransfer(investment.investor, investment.amount);
+        // Return principal to user using asset-specific investment token or fallback to default
+        if (asset.investmentToken != address(0)) {
+            // Return principal using asset-specific investment token
+            IERC20Upgradeable(asset.investmentToken).safeTransfer(investment.investor, investment.amount);
+        } else {
+            // Return principal using default investment token
+            _investmentToken.safeTransfer(investment.investor, investment.amount);
+        }
         
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Cancelled);
     }

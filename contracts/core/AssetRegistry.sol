@@ -60,11 +60,15 @@ contract AssetRegistry is
     
     event AssetPeriodUpdated(uint256 indexed assetId, uint256 period);
     
+    event AssetInvestmentTokenUpdated(uint256 indexed assetId, address investmentToken);
+    
     struct Asset {
         uint256 assetId;
         string name;
+        string issuer;
         string description;
         address token;
+        address investmentToken;
         uint256 apy;
         uint256 maxAmount;
         uint256 currentAmount;
@@ -127,6 +131,7 @@ contract AssetRegistry is
      * @param issuer Issuer
      * @param description Asset description
      * @param token Reward token address
+     * @param investmentToken Investment token address
      * @param maxAmount Maximum investment amount
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      * @param minInvestment Minimum investment amount
@@ -139,6 +144,7 @@ contract AssetRegistry is
         string calldata issuer,
         string calldata description,
         address token,
+        address investmentToken,
         uint256 maxAmount,
         uint256 apy,
         uint256 minInvestment,
@@ -150,6 +156,7 @@ contract AssetRegistry is
         require(maxAmount > 0, "AssetRegistry: maxAmount must be greater than 0");
         require(apy > 0, "AssetRegistry: apy must be greater than 0");
         require(token != address(0), "AssetRegistry: token cannot be zero address");
+        require(investmentToken != address(0), "AssetRegistry: investmentToken cannot be zero address");
         require(period > 0, "AssetRegistry: period must be greater than 0");
         require(minInvestment > 0, "AssetRegistry: minInvestment must be greater than 0");
         require(maxInvestment >= minInvestment, "AssetRegistry: maxInvestment must be >= minInvestment");
@@ -162,6 +169,7 @@ contract AssetRegistry is
         asset.issuer = issuer;
         asset.description = description;
         asset.token = token;
+        asset.investmentToken = investmentToken;
         asset.maxAmount = maxAmount;
         asset.currentAmount = 0;
         asset.apy = apy;
@@ -235,53 +243,69 @@ contract AssetRegistry is
         emit AssetAmountUpdated(assetId, amount, isRefund, asset.currentAmount);
     }
     
-    /**
-     * @dev Update asset APY
-     * @param assetId Asset ID
-     * @param apy New APY value
-     */
-    function updateAssetAPY(uint256 assetId, uint256 apy) 
-        external 
-        override 
-        onlyAdmin 
-        assetExists(assetId) 
-    {
-        require(apy > 0, "AssetRegistry: apy must be greater than 0");
-        _assets[assetId].apy = apy;
-        emit AssetAPYUpdated(assetId, apy);
-    }
+    // /**
+    //  * @dev Update asset APY
+    //  * @param assetId Asset ID
+    //  * @param apy New APY value
+    //  */
+    // function updateAssetAPY(uint256 assetId, uint256 apy) 
+    //     external 
+    //     override 
+    //     onlyAdmin 
+    //     assetExists(assetId) 
+    // {
+    //     require(apy > 0, "AssetRegistry: apy must be greater than 0");
+    //     _assets[assetId].apy = apy;
+    //     emit AssetAPYUpdated(assetId, apy);
+    // }
     
-    /**
-     * @dev Update asset reward token
-     * @param assetId Asset ID
-     * @param token New reward token address
-     */
-    function updateAssetToken(uint256 assetId, address token) 
-        external 
-        override 
-        onlyAdmin 
-        assetExists(assetId) 
-    {
-        require(token != address(0), "AssetRegistry: token cannot be zero address");
-        _assets[assetId].token = token;
-        emit AssetTokenUpdated(assetId, token);
-    }
+    // /**
+    //  * @dev Update asset reward token
+    //  * @param assetId Asset ID
+    //  * @param token New reward token address
+    //  */
+    // function updateAssetToken(uint256 assetId, address token) 
+    //     external 
+    //     override 
+    //     onlyAdmin 
+    //     assetExists(assetId) 
+    // {
+    //     require(token != address(0), "AssetRegistry: token cannot be zero address");
+    //     _assets[assetId].token = token;
+    //     emit AssetTokenUpdated(assetId, token);
+    // }
     
-    /**
-     * @dev Update asset period
-     * @param assetId Asset ID
-     * @param period New period in seconds
-     */
-    function updateAssetPeriod(uint256 assetId, uint256 period) 
-        external 
-        override 
-        onlyAdmin 
-        assetExists(assetId) 
-    {
-        require(period > 0, "AssetRegistry: period must be greater than 0");
-        _assets[assetId].period = period;
-        emit AssetPeriodUpdated(assetId, period);
-    }
+    // /**
+    //  * @dev Update asset investment token
+    //  * @param assetId Asset ID
+    //  * @param investmentToken New investment token address
+    //  */
+    // function updateAssetInvestmentToken(uint256 assetId, address investmentToken) 
+    //     external 
+    //     override 
+    //     onlyAdmin 
+    //     assetExists(assetId) 
+    // {
+    //     require(investmentToken != address(0), "AssetRegistry: investment token cannot be zero address");
+    //     _assets[assetId].investmentToken = investmentToken;
+    //     emit AssetInvestmentTokenUpdated(assetId, investmentToken);
+    // }
+    
+    // /**
+    //  * @dev Update asset period
+    //  * @param assetId Asset ID
+    //  * @param period New period in seconds
+    //  */
+    // function updateAssetPeriod(uint256 assetId, uint256 period) 
+    //     external 
+    //     override 
+    //     onlyAdmin 
+    //     assetExists(assetId) 
+    // {
+    //     require(period > 0, "AssetRegistry: period must be greater than 0");
+    //     _assets[assetId].period = period;
+    //     emit AssetPeriodUpdated(assetId, period);
+    // }
     
     /**
      * @dev Validate investment
