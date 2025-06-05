@@ -7,15 +7,15 @@ describe("SystemParameters", function () {
   let admin;
   let user;
   
-  // 常量
+  // Constants
   const ADMIN_ROLE = ethers.keccak256(ethers.toUtf8Bytes("ADMIN_ROLE"));
   const DEFAULT_ADMIN_ROLE = ethers.ZeroHash;
 
-  // 预设参数
+  // Preset parameters
   const minInvestmentAmount = ethers.parseEther("10"); // 10 weUSD
-  const maxInvestmentAmount = ethers.parseEther("100000000"); // 1亿 weUSD
-  const period1Day = 86400; // 1天（秒）
-  const period1Week = 604800; // 1周（秒）
+  const maxInvestmentAmount = ethers.parseEther("100000000"); // 100M weUSD
+  const period1Day = 86400; // 1 day (seconds)
+  const period1Week = 604800; // 1 week (seconds)
   const apy = ethers.parseEther("0.05"); // 5%
 
   beforeEach(async function () {
@@ -76,19 +76,19 @@ describe("SystemParameters", function () {
 
   describe("Role Management", function () {
     it("Should allow admin to grant and revoke roles", async function () {
-      // 授予管理员角色
+      // Grant admin role
       await systemParameters.grantRole(ADMIN_ROLE, admin.address);
       expect(await systemParameters.hasRole(ADMIN_ROLE, admin.address)).to.be.true;
       
-      // 新管理员应该能设置参数
+      // New admin should be able to set parameters
       await systemParameters.connect(admin).setMinInvestmentAmount(ethers.parseEther("20"));
       expect(await systemParameters.getMinInvestmentAmount()).to.equal(ethers.parseEther("20"));
 
-      // 撤销管理员角色
+      // Revoke admin role
       await systemParameters.revokeRole(ADMIN_ROLE, admin.address);
       expect(await systemParameters.hasRole(ADMIN_ROLE, admin.address)).to.be.false;
       
-      // 被撤销角色后应该不能设置参数
+      // Should not be able to set parameters after role revocation
       await expect(
         systemParameters.connect(admin).setMinInvestmentAmount(ethers.parseEther("30"))
       ).to.be.revertedWith("SystemParameters: caller is not an admin");
@@ -97,11 +97,11 @@ describe("SystemParameters", function () {
 
   describe("Pause and Unpause", function () {
     it("Should allow admin to pause and unpause the contract", async function () {
-      // 暂停合约
+      // Pause contract
       await systemParameters.pause();
       expect(await systemParameters.paused()).to.be.true;
       
-      // 解除暂停
+      // Unpause contract
       await systemParameters.unpause();
       expect(await systemParameters.paused()).to.be.false;
     });

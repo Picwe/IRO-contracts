@@ -7,7 +7,7 @@ require("@openzeppelin/hardhat-upgrades");
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
-    version: "0.8.25", // 最新稳定版
+    version: "0.8.25", // Latest stable version
     settings: {
       optimizer: {
         enabled: true,
@@ -19,12 +19,12 @@ module.exports = {
     localhost: {
       url: "http://127.0.0.1:8545"
     },
-    // 测试网配置
+    // Testnet configuration
     sepolia: {
       url: process.env.SEPOLIA_URL || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []
     },
-    // 主网配置
+    // Mainnet configuration
     mainnet: {
       url: process.env.MAINNET_URL || "",
       accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : []

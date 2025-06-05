@@ -13,44 +13,44 @@ describe("Investment Flow Integration Test", function () {
   let issuer;
   let investor;
 
-  // 常量
+  // Constants
   const INVESTMENT_MANAGER_ROLE = ethers.keccak256(ethers.toUtf8Bytes("INVESTMENT_MANAGER_ROLE"));
 
-  // 预设参数
-  const initialFunds = ethers.parseEther("1000000"); // 100万 weUSD
-  const assetAmount = ethers.parseEther("1000000"); // 100万 weUSD
+  // Preset parameters
+  const initialFunds = ethers.parseEther("1000000"); // 1M weUSD
+  const assetAmount = ethers.parseEther("1000000"); // 1M weUSD
   const investAmount = ethers.parseEther("100"); // 100 weUSD
-  const profitAmount = ethers.parseEther("10000"); // 1万 weUSD
-  const PERIOD_1_DAY = 86400; // 1天（秒）
+  const profitAmount = ethers.parseEther("10000"); // 10K weUSD
+  const PERIOD_1_DAY = 86400; // 1 day (seconds)
 
   beforeEach(async function () {
     [owner, issuer, investor] = await ethers.getSigners();
 
-    // 部署 weUSD 代币
+    // Deploy weUSD token
     const WeUSD = await ethers.getContractFactory("ERC20Mock");
     weUSD = await WeUSD.deploy("Wrapped eUSD", "weUSD", 18);
     await weUSD.waitForDeployment();
 
-    // 铸造代币
+    // Mint tokens
     await weUSD.mint(owner.address, initialFunds);
     await weUSD.mint(investor.address, initialFunds);
 
-    // 部署系统参数合约
+    // Deploy system parameters contract
     const SystemParameters = await ethers.getContractFactory("SystemParameters");
     systemParameters = await upgrades.deployProxy(SystemParameters, [owner.address]);
     await systemParameters.waitForDeployment();
 
-    // 部署资产注册合约
+    // Deploy asset registry contract
     const AssetRegistry = await ethers.getContractFactory("AssetRegistry");
     assetRegistry = await upgrades.deployProxy(AssetRegistry, [owner.address, await systemParameters.getAddress()]);
     await assetRegistry.waitForDeployment();
 
-    // 部署收益池合约
+    // Deploy profit pool contract
     const ProfitPool = await ethers.getContractFactory("ProfitPool");
     profitPool = await upgrades.deployProxy(ProfitPool, [owner.address, await systemParameters.getAddress(), await weUSD.getAddress()]);
     await profitPool.waitForDeployment();
 
-    // 部署投资管理合约
+    // Deploy investment manager contract
     const InvestmentManager = await ethers.getContractFactory("InvestmentManager");
     investmentManager = await upgrades.deployProxy(InvestmentManager, [
       owner.address,
@@ -61,14 +61,14 @@ describe("Investment Flow Integration Test", function () {
     ]);
     await investmentManager.waitForDeployment();
 
-    // 授予投资管理合约角色
+    // Grant investment manager role
     await assetRegistry.grantInvestmentManagerRole(await investmentManager.getAddress());
     await profitPool.grantInvestmentManagerRole(await investmentManager.getAddress());
 
-    // 添加用户到白名单
+    // Add user to whitelist
     await investmentManager.addToWhitelist(investor.address);
 
-    // 添加资产
+    // Add asset
     await assetRegistry.addAsset(
       "Test Asset",
       issuer.address,
@@ -77,17 +77,17 @@ describe("Investment Flow Integration Test", function () {
       assetAmount
     );
 
-    // 批准代币使用
+    // Approve token usage
     await weUSD.connect(investor).approve(await investmentManager.getAddress(), initialFunds);
     await weUSD.approve(await profitPool.getAddress(), initialFunds);
   });
 
   describe("Complete Investment Flow", function () {
     it("Should allow the entire investment flow from invest to claim profit", async function () {
-      // 1. 投资
+      // 1. Investment
       await investmentManager.connect(investor).invest(1, investAmount, PERIOD_1_DAY);
 
-      // 检查投资是否成功
+      // Check if investment is successful
       const userInvestmentCount = await investmentManager.getUserInvestmentCount(investor.address);
       expect(userInvestmentCount).to.equal(1);
 
@@ -99,38 +99,38 @@ describe("Investment Flow Integration Test", function () {
       expect(investment.amount).to.equal(investAmount);
       expect(investment.status).to.equal(0); // Active
 
-      // 2. 向收益池添加收益
+      // 2. Add profit to profit pool
       await profitPool.addProfit(profitAmount);
       const poolInfo = await profitPool.getPoolInfo();
       expect(poolInfo.totalAmount).to.equal(profitAmount);
 
-      // 3. 等待投资期结束
+      // 3. Wait for investment period to end
       await time.increase(PERIOD_1_DAY + 1);
 
-      // 4. 领取收益
+      // 4. Claim profit
       await investmentManager.connect(investor).updateInvestmentStatus(investmentId);
       const updatedInvestment = await investmentManager.getInvestment(investmentId);
       expect(updatedInvestment.status).to.equal(1); // Expired
 
-      // 计算预期收益
+      // Calculate expected profit
       const expectedProfit = await investmentManager.calculateProfit(investmentId);
       expect(expectedProfit).to.be.gt(0);
 
-      // 领取收益
+      // Claim profit
       const initialBalance = await weUSD.balanceOf(investor.address);
       await investmentManager.connect(investor).claimProfit(investmentId);
       const finalBalance = await weUSD.balanceOf(investor.address);
 
-      // 检查收益是否正确
+      // Check if profit is correct
       expect(finalBalance - initialBalance).to.equal(expectedProfit.add(investAmount));
 
-      // 检查投资状态
+      // Check investment status
       const finalInvestment = await investmentManager.getInvestment(investmentId);
       expect(finalInvestment.status).to.equal(2); // Claimed
       expect(finalInvestment.profit).to.equal(expectedProfit);
       expect(finalInvestment.claimedProfit).to.equal(expectedProfit);
 
-      // 5. 检查用户投资概览
+      // 5. Check user investment overview
       const summary = await investmentManager.getUserInvestmentSummary(investor.address);
       expect(summary.totalInvested).to.equal(investAmount);
       expect(summary.activeInvestments).to.equal(0);

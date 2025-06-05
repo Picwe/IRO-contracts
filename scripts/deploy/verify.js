@@ -1,17 +1,17 @@
-// 验证脚本
+// Verification script
 const { ethers, upgrades, run } = require("hardhat");
 
 async function main() {
   console.log("Verifying contracts...");
 
-  // 获取已部署合约地址
+  // Get deployed contract addresses
   const systemParametersAddress = process.env.SYSTEM_PARAMETERS_ADDRESS;
   const assetRegistryAddress = process.env.ASSET_REGISTRY_ADDRESS;
   const profitPoolAddress = process.env.PROFIT_POOL_ADDRESS;
   const investmentManagerAddress = process.env.INVESTMENT_MANAGER_ADDRESS;
   const weUSDAddress = process.env.WEUSD_ADDRESS;
 
-  // 验证合约实现
+  // Verify contract implementations
   console.log("Verifying SystemParameters implementation...");
   const systemParametersImplAddress = await upgrades.erc1967.getImplementationAddress(systemParametersAddress);
   await run("verify:verify", {
@@ -36,7 +36,7 @@ async function main() {
     address: investmentManagerImplAddress
   });
 
-  // 验证 weUSD 代币
+  // Verify weUSD token
   console.log("Verifying WeUSD token...");
   await run("verify:verify", {
     address: weUSDAddress,
@@ -46,7 +46,7 @@ async function main() {
   console.log("Verification completed!");
 }
 
-// 运行验证
+// Run verification
 main()
   .then(() => process.exit(0))
   .catch((error) => {

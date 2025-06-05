@@ -1,38 +1,38 @@
-// 部署脚本 - 使用CommonJS格式
+// Deployment script - using CommonJS format
 const { ethers, upgrades } = require("hardhat");
 
-// 主要部署函数
+// Main deployment function
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log("部署账户:", deployer.address);
+  console.log("Deploying account:", deployer.address);
   
-  // 部署 mock weUSD 代币
-  console.log("开始部署 ERC20Mock (weUSD)...");
+  // Deploy mock weUSD token
+  console.log("Deploying ERC20Mock (weUSD)...");
   const ERC20Mock = await ethers.getContractFactory("ERC20Mock");
   const weUSD = await ERC20Mock.deploy("weUSD", "weUSD", 18);
   await weUSD.waitForDeployment();
-  console.log("ERC20Mock (weUSD) 已部署到:", await weUSD.getAddress());
+  console.log("ERC20Mock (weUSD) deployed to:", await weUSD.getAddress());
   
-  // 部署系统参数合约
-  console.log("开始部署 SystemParameters...");
+  // Deploy system parameters contract
+  console.log("Deploying SystemParameters...");
   const SystemParameters = await ethers.getContractFactory("SystemParameters");
   const systemParameters = await upgrades.deployProxy(SystemParameters, [deployer.address], {
     initializer: "initialize",
     kind: "uups"
   });
   await systemParameters.waitForDeployment();
-  console.log("SystemParameters 已部署到:", await systemParameters.getAddress());
+  console.log("SystemParameters deployed to:", await systemParameters.getAddress());
   
-  // 设置系统参数
-  console.log("设置系统参数...");
-  const oneDay = 24 * 60 * 60; // 1天
-  const oneWeek = 7 * oneDay;  // 1周
-  const twoWeeks = 2 * oneWeek; // 2周
-  const oneMonth = 30 * oneDay; // 1个月
-  const threeMonths = 3 * oneMonth; // 3个月
-  const sixMonths = 6 * oneMonth; // 6个月
+  // Set system parameters
+  console.log("Setting system parameters...");
+  const oneDay = 24 * 60 * 60; // 1 day
+  const oneWeek = 7 * oneDay;  // 1 week
+  const twoWeeks = 2 * oneWeek; // 2 weeks
+  const oneMonth = 30 * oneDay; // 1 month
+  const threeMonths = 3 * oneMonth; // 3 months
+  const sixMonths = 6 * oneMonth; // 6 months
   
-  // 设置不同周期的APY
+  // Set APY for different periods
   await systemParameters.setPeriodAPY(oneDay, ethers.parseEther("0.05")); // 5% APY
   await systemParameters.setPeriodAPY(oneWeek, ethers.parseEther("0.10")); // 10% APY
   await systemParameters.setPeriodAPY(twoWeeks, ethers.parseEther("0.15")); // 15% APY
@@ -40,45 +40,45 @@ async function main() {
   await systemParameters.setPeriodAPY(threeMonths, ethers.parseEther("0.25")); // 25% APY
   await systemParameters.setPeriodAPY(sixMonths, ethers.parseEther("0.30")); // 30% APY
   
-  // 设置投资限制
-  await systemParameters.setMinInvestmentAmount(ethers.parseEther("10")); // 最小投资10 weUSD
-  await systemParameters.setMaxInvestmentAmount(ethers.parseEther("100000000")); // 最大投资1亿 weUSD
+  // Set investment limits
+  await systemParameters.setMinInvestmentAmount(ethers.parseEther("10")); // Minimum investment 10 weUSD
+  await systemParameters.setMaxInvestmentAmount(ethers.parseEther("100000000")); // Maximum investment 100M weUSD
   
-  // 设置投资冷却期 - 设置为1分钟，便于测试
+  // Set investment cooldown - set to 1 minute for testing
   await systemParameters.setInvestmentCooldown(60);
   
-  // 部署资产注册合约
-  console.log("开始部署 AssetRegistry...");
+  // Deploy asset registry contract
+  console.log("Deploying AssetRegistry...");
   const AssetRegistry = await ethers.getContractFactory("AssetRegistry");
   const assetRegistry = await upgrades.deployProxy(AssetRegistry, [deployer.address], {
     initializer: "initialize",
     kind: "uups"
   });
   await assetRegistry.waitForDeployment();
-  console.log("AssetRegistry 已部署到:", await assetRegistry.getAddress());
+  console.log("AssetRegistry deployed to:", await assetRegistry.getAddress());
   
-  // 添加示例资产
-  console.log("添加示例资产...");
+  // Add sample assets
+  console.log("Adding sample assets...");
   await assetRegistry.addAsset(
-    "测试债券A", 
     "Test Bond A", 
-    "这是一个测试债券资产", 
+    "Test Bond A", 
+    "This is a test bond asset", 
     "Test Inc.",
-    ethers.parseEther("1000000"), // 100万 weUSD
+    ethers.parseEther("1000000"), // 1M weUSD
     "https://example.com/image1.png"
   );
   
   await assetRegistry.addAsset(
-    "测试债券B", 
     "Test Bond B", 
-    "这是另一个测试债券资产", 
+    "Test Bond B", 
+    "This is another test bond asset", 
     "Test Corp.",
-    ethers.parseEther("2000000"), // 200万 weUSD
+    ethers.parseEther("2000000"), // 2M weUSD
     "https://example.com/image2.png"
   );
   
-  // 部署收益池合约
-  console.log("开始部署 ProfitPool...");
+  // Deploy profit pool contract
+  console.log("Deploying ProfitPool...");
   const ProfitPool = await ethers.getContractFactory("ProfitPool");
   const profitPool = await upgrades.deployProxy(ProfitPool, [
     deployer.address,
@@ -89,10 +89,10 @@ async function main() {
     kind: "uups"
   });
   await profitPool.waitForDeployment();
-  console.log("ProfitPool 已部署到:", await profitPool.getAddress());
+  console.log("ProfitPool deployed to:", await profitPool.getAddress());
   
-  // 部署投资管理合约
-  console.log("开始部署 InvestmentManager...");
+  // Deploy investment manager contract
+  console.log("Deploying InvestmentManager...");
   const InvestmentManager = await ethers.getContractFactory("InvestmentManager");
   const investmentManager = await upgrades.deployProxy(InvestmentManager, [
     deployer.address,
@@ -105,10 +105,10 @@ async function main() {
     kind: "uups"
   });
   await investmentManager.waitForDeployment();
-  console.log("InvestmentManager 已部署到:", await investmentManager.getAddress());
+  console.log("InvestmentManager deployed to:", await investmentManager.getAddress());
   
-  // 部署风险监控合约
-  console.log("开始部署 RiskMonitor...");
+  // Deploy risk monitor contract
+  console.log("Deploying RiskMonitor...");
   const RiskMonitor = await ethers.getContractFactory("RiskMonitor");
   const riskMonitor = await upgrades.deployProxy(RiskMonitor, [
     deployer.address,
@@ -121,23 +121,23 @@ async function main() {
     kind: "uups"
   });
   await riskMonitor.waitForDeployment();
-  console.log("RiskMonitor 已部署到:", await riskMonitor.getAddress());
+  console.log("RiskMonitor deployed to:", await riskMonitor.getAddress());
   
-  // 将投资管理合约设置为资产注册合约的操作者
-  console.log("设置合约权限...");
+  // Set investment manager as operator for asset registry
+  console.log("Setting contract permissions...");
   await assetRegistry.grantRole(await assetRegistry.OPERATOR_ROLE(), await investmentManager.getAddress());
   
-  // 将投资管理合约设置为收益池合约的操作者
+  // Set investment manager as operator for profit pool
   await profitPool.grantRole(await profitPool.OPERATOR_ROLE(), await investmentManager.getAddress());
   
-  // 向收益池添加一些测试资金
-  console.log("向收益池添加测试资金...");
-  await weUSD.mint(deployer.address, ethers.parseEther("10000")); // 铸造10000 weUSD
+  // Add some test funds to profit pool
+  console.log("Adding test funds to profit pool...");
+  await weUSD.mint(deployer.address, ethers.parseEther("10000")); // Mint 10000 weUSD
   await weUSD.approve(await profitPool.getAddress(), ethers.parseEther("10000"));
   await profitPool.depositProfit(ethers.parseEther("10000"));
   
-  console.log("部署完成！");
-  console.log("合约地址汇总：");
+  console.log("Deployment completed!");
+  console.log("Contract addresses summary:");
   console.log("weUSD:", await weUSD.getAddress());
   console.log("SystemParameters:", await systemParameters.getAddress());
   console.log("AssetRegistry:", await assetRegistry.getAddress());
@@ -146,7 +146,7 @@ async function main() {
   console.log("RiskMonitor:", await riskMonitor.getAddress());
 }
 
-// 执行部署
+// Execute deployment
 main()
   .then(() => process.exit(0))
   .catch((error) => {
