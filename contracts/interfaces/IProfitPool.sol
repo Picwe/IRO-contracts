@@ -29,6 +29,14 @@ interface IProfitPool {
     function depositProfitForAsset(uint256 assetId, uint256 amount) external;
     
     /**
+     * @dev Deposit profit to a specific asset's profit pool with a specific token
+     * @param assetId Asset ID
+     * @param amount Profit amount
+     * @param token Token address
+     */
+    function depositProfitForAssetWithToken(uint256 assetId, uint256 amount, address token) external;
+    
+    /**
      * @dev Deposit profit
      * @param amount Profit amount
      */
@@ -43,6 +51,15 @@ interface IProfitPool {
     function withdrawProfitFromAsset(uint256 assetId, uint256 amount, address recipient) external;
     
     /**
+     * @dev Withdraw profit from a specific asset's profit pool with a specific token
+     * @param assetId Asset ID
+     * @param amount Profit amount
+     * @param recipient Recipient address
+     * @param token Token address
+     */
+    function withdrawProfitFromAssetWithToken(uint256 assetId, uint256 amount, address recipient, address token) external;
+    
+    /**
      * @dev Withdraw profit
      * @param amount Profit amount
      * @param recipient Recipient address
@@ -51,10 +68,9 @@ interface IProfitPool {
     
     /**
      * @dev Emergency withdraw
-     * @param amount Withdrawal amount
      * @param recipient Recipient address
      */
-    function emergencyWithdraw(uint256 amount, address recipient) external;
+    function emergencyWithdraw(address recipient) external;
     
     /**
      * @dev Get specific asset profit pool balance
@@ -62,6 +78,14 @@ interface IProfitPool {
      * @return Profit pool balance
      */
     function getAssetBalance(uint256 assetId) external view returns (uint256);
+    
+    /**
+     * @dev Get specific asset profit pool balance for a token
+     * @param assetId Asset ID
+     * @param token Token address
+     * @return Profit pool balance
+     */
+    function getAssetBalanceWithToken(uint256 assetId, address token) external view returns (uint256);
     
     /**
      * @dev Get profit pool balance
@@ -80,6 +104,13 @@ interface IProfitPool {
      * @return Total withdrawn profit
      */
     function getTotalWithdrawn() external view returns (uint256);
+    
+    /**
+     * @dev Get last withdrawal time for an address
+     * @param account Account address
+     * @return Last withdrawal timestamp
+     */
+    function getLastWithdrawalTime(address account) external view returns (uint256);
     
     /**
      * @dev Pause contract

@@ -67,16 +67,32 @@ interface IInvestmentManager {
     }
     
     /**
+     * @dev Update investment token address
+     * @param newInvestmentToken New investment token address
+     */
+    function updateInvestmentToken(address newInvestmentToken) external;
+    
+    /**
+     * @dev Get investment token address
+     * @return Investment token address
+     */
+    function getInvestmentToken() external view returns (address);
+    
+    /**
+     * @dev Get reward token address
+     * @return Reward token address
+     */
+    function getRewardToken() external view returns (address);
+    
+    /**
      * @dev Invest in an asset
      * @param assetId Asset ID
      * @param amount Investment amount
-     * @param period Investment period (in seconds)
      * @return Investment ID
      */
     function invest(
         uint256 assetId,
-        uint256 amount,
-        uint256 period
+        uint256 amount
     ) external returns (uint256);
     
     /**

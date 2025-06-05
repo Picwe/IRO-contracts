@@ -42,9 +42,6 @@ contract InvestmentManager is
     // weUSD token address - used for investments
     IERC20Upgradeable private _investmentToken;
     
-    // Reward token address - used for rewards
-    IERC20Upgradeable private _rewardToken;
-    
     // Investment mappings
     mapping(uint256 => Investment) private _investments;
     uint256 private _nextInvestmentId;
@@ -83,6 +80,8 @@ contract InvestmentManager is
     
     event BlacklistUpdated(address indexed account, bool status);
     
+    event InvestmentTokenUpdated(address indexed oldToken, address indexed newToken);
+    
     /**
      * @dev Initialization function, replaces constructor
      * @param admin Admin address
@@ -90,15 +89,13 @@ contract InvestmentManager is
      * @param assetRegistry Asset registry contract address
      * @param profitPool Profit pool contract address
      * @param investmentToken Investment token address
-     * @param rewardToken Reward token address
      */
     function initialize(
         address admin,
         address systemParameters,
         address assetRegistry,
         address profitPool,
-        address investmentToken,
-        address rewardToken
+        address investmentToken
     ) public initializer {
         __AccessControl_init();
         __Pausable_init();
@@ -121,11 +118,46 @@ contract InvestmentManager is
         // Set investment token
         _investmentToken = IERC20Upgradeable(investmentToken);
         
-        // Set reward token
-        _rewardToken = IERC20Upgradeable(rewardToken);
-        
         // Initialize investment ID
         _nextInvestmentId = 1;
+    }
+    
+    /**
+     * @dev Update investment token address
+     * @param newInvestmentToken New investment token address
+     */
+    function updateInvestmentToken(address newInvestmentToken) 
+        external 
+        onlyAdmin 
+    {
+        require(newInvestmentToken != address(0), "InvestmentManager: new token cannot be zero address");
+        address oldToken = address(_investmentToken);
+        _investmentToken = IERC20Upgradeable(newInvestmentToken);
+        emit InvestmentTokenUpdated(oldToken, newInvestmentToken);
+    }
+    
+    /**
+     * @dev Get investment token address
+     * @return Investment token address
+     */
+    function getInvestmentToken() 
+        external 
+        view 
+        returns (address) 
+    {
+        return address(_investmentToken);
+    }
+    
+    /**
+     * @dev Get reward token address from profit pool
+     * @return Reward token address
+     */
+    function getRewardToken() 
+        external 
+        view 
+        returns (address) 
+    {
+        return _profitPool.getRewardToken();
     }
     
     /**
@@ -179,7 +211,6 @@ contract InvestmentManager is
      * @dev Invest in an asset
      * @param assetId Asset ID
      * @param amount Investment amount
-     * @param period Investment period (in seconds)
      * @return Investment ID
      */
     function invest(
@@ -228,7 +259,7 @@ contract InvestmentManager is
         investment.amount = amount;
         investment.startTime = startTime;
         investment.endTime = endTime;
-        investment.period = period;
+        investment.period = asset.period;
         investment.apy = asset.apy;
         investment.status = InvestmentStatus.Active;
         investment.profit = 0;
@@ -253,7 +284,7 @@ contract InvestmentManager is
             amount,
             startTime,
             endTime,
-            period,
+            investment.period,
             investment.apy
         );
         
@@ -328,6 +359,9 @@ contract InvestmentManager is
             "InvestmentManager: investment has not matured"
         );
         
+        // Get asset information to get the reward token
+        IAssetRegistry.Asset memory asset = _assetRegistry.getAsset(investment.assetId);
+        
         // Calculate profit
         uint256 profit = calculateProfit(investmentId);
         
@@ -345,9 +379,25 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Transfer profit from asset-specific profit pool to user using reward token
+        // Transfer profit from asset-specific profit pool to user using asset's reward token
         if (profit > 0) {
-            _profitPool.withdrawProfitFromAsset(investment.assetId, profit, investment.investor);
+            // Check if asset has a specific reward token
+            if (asset.token != address(0)) {
+                // Use asset-specific reward token
+                _profitPool.withdrawProfitFromAssetWithToken(
+                    investment.assetId, 
+                    profit, 
+                    investment.investor, 
+                    asset.token
+                );
+            } else {
+                // Use default reward token from profit pool
+                _profitPool.withdrawProfitFromAsset(
+                    investment.assetId, 
+                    profit, 
+                    investment.investor
+                );
+            }
         }
         
         // Return principal to user using investment token

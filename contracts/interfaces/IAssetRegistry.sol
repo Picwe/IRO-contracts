@@ -7,26 +7,44 @@ pragma solidity ^0.8.25;
  */
 interface IAssetRegistry {
     /**
+     * @dev Asset status enum
+     */
+    enum AssetStatus {
+        Inactive,
+        Active,
+        Completed,
+        Deprecated
+    }
+    
+    /**
      * @dev Asset structure
      * @param assetId Asset ID
      * @param name Asset name
      * @param issuer Issuer
-     * @param totalAmount Total amount
-     * @param usedAmount Used amount
-     * @param remainingAmount Remaining amount
+     * @param description Asset description
+     * @param token Reward token address for this asset
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
-     * @param isActive Whether active
+     * @param maxAmount Maximum total amount for investment
+     * @param currentAmount Current invested amount
+     * @param status Asset status
+     * @param minInvestment Minimum investment amount
+     * @param maxInvestment Maximum investment amount per user
+     * @param period Investment period in seconds
      * @param addedTime Added time
      */
     struct Asset {
         uint256 assetId;
         string name;
         string issuer;
-        uint256 totalAmount;
-        uint256 usedAmount;
-        uint256 remainingAmount;
+        string description;
+        address token;
         uint256 apy;
-        bool isActive;
+        uint256 maxAmount;
+        uint256 currentAmount;
+        AssetStatus status;
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        uint256 period;
         uint256 addedTime;
     }
     
@@ -40,15 +58,25 @@ interface IAssetRegistry {
      * @dev Add asset
      * @param name Asset name
      * @param issuer Issuer
-     * @param totalAmount Total amount
+     * @param description Asset description
+     * @param token Reward token address
+     * @param maxAmount Maximum investment amount
      * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
+     * @param minInvestment Minimum investment amount
+     * @param maxInvestment Maximum investment amount per user
+     * @param period Investment period in seconds
      * @return Asset ID
      */
     function addAsset(
         string calldata name,
         string calldata issuer,
-        uint256 totalAmount,
-        uint256 apy
+        string calldata description,
+        address token,
+        uint256 maxAmount,
+        uint256 apy,
+        uint256 minInvestment,
+        uint256 maxInvestment,
+        uint256 period
     ) external returns (uint256);
     
     /**
@@ -81,6 +109,20 @@ interface IAssetRegistry {
      * @param apy New APY value (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
      */
     function updateAssetAPY(uint256 assetId, uint256 apy) external;
+    
+    /**
+     * @dev Update asset reward token
+     * @param assetId Asset ID
+     * @param token New reward token address
+     */
+    function updateAssetToken(uint256 assetId, address token) external;
+    
+    /**
+     * @dev Update asset period
+     * @param assetId Asset ID
+     * @param period New period in seconds
+     */
+    function updateAssetPeriod(uint256 assetId, uint256 period) external;
     
     /**
      * @dev Validate investment
@@ -122,4 +164,21 @@ interface IAssetRegistry {
      * @return Active asset list
      */
     function getActiveAssets() external view returns (Asset[] memory);
+    
+    /**
+     * @dev Check if asset exists
+     * @param assetId Asset ID
+     * @return Whether asset exists
+     */
+    function assetExists(uint256 assetId) external view returns (bool);
+    
+    /**
+     * @dev Pause contract
+     */
+    function pause() external;
+    
+    /**
+     * @dev Unpause contract
+     */
+    function unpause() external;
 } 

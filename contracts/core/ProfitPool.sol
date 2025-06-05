@@ -36,7 +36,7 @@ contract ProfitPool is
     // Asset registry contract
     IAssetRegistry private _assetRegistry;
     
-    // Reward token address
+    // Default reward token address
     IERC20Upgradeable private _rewardToken;
     
     // Total deposited profits
@@ -48,14 +48,20 @@ contract ProfitPool is
     // Last withdrawal time mapping
     mapping(address => uint256) private _lastWithdrawalTime;
     
-    // Asset-specific profit pool balances
+    // Asset-specific profit pool balances for default token
     mapping(uint256 => uint256) private _assetProfitPools;
+    
+    // Asset-specific profit pool balances for custom tokens
+    // assetId => token => balance
+    mapping(uint256 => mapping(address => uint256)) private _assetTokenProfitPools;
     
     // Event definitions
     event ProfitDeposited(address indexed depositor, uint256 amount);
     event ProfitDepositedForAsset(address indexed depositor, uint256 indexed assetId, uint256 amount);
+    event ProfitDepositedForAssetWithToken(address indexed depositor, uint256 indexed assetId, uint256 amount, address token);
     event ProfitWithdrawn(address indexed recipient, uint256 amount);
     event ProfitWithdrawnFromAsset(address indexed recipient, uint256 indexed assetId, uint256 amount);
+    event ProfitWithdrawnFromAssetWithToken(address indexed recipient, uint256 indexed assetId, uint256 amount, address token);
     event EmergencyWithdrawal(address indexed recipient, uint256 amount);
     event RewardTokenUpdated(address indexed oldToken, address indexed newToken);
     
@@ -178,6 +184,20 @@ contract ProfitPool is
     }
     
     /**
+     * @dev Ensures asset profit pool has sufficient balance for a specific token
+     * @param assetId Asset ID
+     * @param amount Withdrawal amount
+     * @param token Token address
+     */
+    modifier sufficientAssetTokenBalance(uint256 assetId, uint256 amount, address token) {
+        require(
+            _assetTokenProfitPools[assetId][token] >= amount,
+            "ProfitPool: insufficient asset token profit pool balance"
+        );
+        _;
+    }
+    
+    /**
      * @dev Ensures asset exists
      * @param assetId Asset ID
      */
@@ -190,7 +210,7 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Deposit profit to asset-specific profit pool
+     * @dev Deposit profit to asset-specific profit pool using default token
      * @param assetId Asset ID
      * @param amount Profit amount
      */
@@ -215,6 +235,33 @@ contract ProfitPool is
     }
     
     /**
+     * @dev Deposit profit to asset-specific profit pool with a specific token
+     * @param assetId Asset ID
+     * @param amount Profit amount
+     * @param token Token address
+     */
+    function depositProfitForAssetWithToken(uint256 assetId, uint256 amount, address token) 
+        external 
+        override 
+        nonReentrant 
+        assetExists(assetId) 
+    {
+        require(amount > 0, "ProfitPool: amount must be greater than 0");
+        require(token != address(0), "ProfitPool: token cannot be zero address");
+        
+        // Update asset profit pool balance for the specific token
+        _assetTokenProfitPools[assetId][token] += amount;
+        
+        // Update statistics (still track in total)
+        _totalDeposited += amount;
+        
+        // Transfer tokens to contract
+        IERC20Upgradeable(token).safeTransferFrom(msg.sender, address(this), amount);
+        
+        emit ProfitDepositedForAssetWithToken(msg.sender, assetId, amount, token);
+    }
+    
+    /**
      * @dev Deposit profit
      * @param amount Profit amount
      */
@@ -231,7 +278,7 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Withdraw profit from asset-specific profit pool
+     * @dev Withdraw profit from asset-specific profit pool using default token
      * @param assetId Asset ID
      * @param amount Profit amount
      * @param recipient Recipient address
@@ -265,6 +312,46 @@ contract ProfitPool is
         _rewardToken.safeTransfer(recipient, amount);
         
         emit ProfitWithdrawnFromAsset(recipient, assetId, amount);
+    }
+    
+    /**
+     * @dev Withdraw profit from asset-specific profit pool with a specific token
+     * @param assetId Asset ID
+     * @param amount Profit amount
+     * @param recipient Recipient address
+     * @param token Token address
+     */
+    function withdrawProfitFromAssetWithToken(
+        uint256 assetId, 
+        uint256 amount, 
+        address recipient,
+        address token
+    ) 
+        external 
+        override 
+        whenNotPaused 
+        nonReentrant 
+        onlyOperator 
+        assetExists(assetId)
+        sufficientAssetTokenBalance(assetId, amount, token)
+    {
+        require(amount > 0, "ProfitPool: amount must be greater than 0");
+        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
+        require(token != address(0), "ProfitPool: token cannot be zero address");
+        
+        // Update asset profit pool balance for the specific token
+        _assetTokenProfitPools[assetId][token] -= amount;
+        
+        // Update statistics
+        _totalWithdrawn += amount;
+        
+        // Update last withdrawal time
+        _lastWithdrawalTime[msg.sender] = block.timestamp;
+        
+        // Transfer reward tokens to recipient
+        IERC20Upgradeable(token).safeTransfer(recipient, amount);
+        
+        emit ProfitWithdrawnFromAssetWithToken(recipient, assetId, amount, token);
     }
     
     /**
@@ -321,7 +408,7 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Get asset-specific profit pool balance
+     * @dev Get asset-specific profit pool balance for default token
      * @param assetId Asset ID
      * @return Balance amount
      */
@@ -332,6 +419,34 @@ contract ProfitPool is
         returns (uint256) 
     {
         return _assetProfitPools[assetId];
+    }
+    
+    /**
+     * @dev Get asset-specific profit pool balance for a specific token
+     * @param assetId Asset ID
+     * @param token Token address
+     * @return Balance amount
+     */
+    function getAssetBalanceWithToken(uint256 assetId, address token) 
+        external 
+        view 
+        override 
+        returns (uint256) 
+    {
+        return _assetTokenProfitPools[assetId][token];
+    }
+    
+    /**
+     * @dev Get profit pool balance
+     * @return Balance amount
+     */
+    function getBalance() 
+        external 
+        view 
+        override 
+        returns (uint256) 
+    {
+        return _rewardToken.balanceOf(address(this));
     }
     
     /**
@@ -403,6 +518,6 @@ contract ProfitPool is
     function _authorizeUpgrade(address newImplementation)
         internal
         override
-        onlyAdmin
+        onlyRole(DEFAULT_ADMIN_ROLE)
     {}
 } 

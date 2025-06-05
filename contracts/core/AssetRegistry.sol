@@ -36,19 +36,29 @@ contract AssetRegistry is
         uint256 indexed assetId,
         string name,
         string issuer,
-        uint256 totalAmount,
-        uint256 apy
+        string description,
+        address token,
+        uint256 maxAmount,
+        uint256 apy,
+        uint256 minInvestment,
+        uint256 maxInvestment,
+        uint256 period
     );
     
-    event AssetStatusUpdated(uint256 indexed assetId, bool isActive);
+    event AssetStatusUpdated(uint256 indexed assetId, AssetStatus status);
+    
     event AssetAmountUpdated(
         uint256 indexed assetId,
         uint256 amount,
         bool isRefund,
-        uint256 remainingAmount
+        uint256 currentAmount
     );
     
     event AssetAPYUpdated(uint256 indexed assetId, uint256 apy);
+    
+    event AssetTokenUpdated(uint256 indexed assetId, address token);
+    
+    event AssetPeriodUpdated(uint256 indexed assetId, uint256 period);
     
     struct Asset {
         uint256 assetId;
@@ -59,10 +69,10 @@ contract AssetRegistry is
         uint256 maxAmount;
         uint256 currentAmount;
         AssetStatus status;
-        // Add investment parameters
-        uint256 minInvestment;    // Minimum investment amount
-        uint256 maxInvestment;    // Maximum investment amount
-        uint256 period;          // Fixed investment period in seconds
+        uint256 minInvestment;
+        uint256 maxInvestment;
+        uint256 period;
+        uint256 addedTime;
     }
     
     /**
@@ -115,36 +125,66 @@ contract AssetRegistry is
      * @dev Add asset
      * @param name Asset name
      * @param issuer Issuer
-     * @param totalAmount Total amount
-     * @param apy Annual percentage yield (precision 1e18)
+     * @param description Asset description
+     * @param token Reward token address
+     * @param maxAmount Maximum investment amount
+     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
+     * @param minInvestment Minimum investment amount
+     * @param maxInvestment Maximum investment amount per user
+     * @param period Investment period in seconds
      * @return Asset ID
      */
     function addAsset(
         string calldata name,
         string calldata issuer,
-        uint256 totalAmount,
-        uint256 apy
+        string calldata description,
+        address token,
+        uint256 maxAmount,
+        uint256 apy,
+        uint256 minInvestment,
+        uint256 maxInvestment,
+        uint256 period
     ) external override onlyAdmin returns (uint256) {
         require(bytes(name).length > 0, "AssetRegistry: name cannot be empty");
         require(bytes(issuer).length > 0, "AssetRegistry: issuer cannot be empty");
-        require(totalAmount > 0, "AssetRegistry: totalAmount must be greater than 0");
+        require(maxAmount > 0, "AssetRegistry: maxAmount must be greater than 0");
         require(apy > 0, "AssetRegistry: apy must be greater than 0");
+        require(token != address(0), "AssetRegistry: token cannot be zero address");
+        require(period > 0, "AssetRegistry: period must be greater than 0");
+        require(minInvestment > 0, "AssetRegistry: minInvestment must be greater than 0");
+        require(maxInvestment >= minInvestment, "AssetRegistry: maxInvestment must be >= minInvestment");
+        require(maxAmount >= maxInvestment, "AssetRegistry: maxAmount must be >= maxInvestment");
         
         uint256 assetId = _nextAssetId++;
         Asset storage asset = _assets[assetId];
         asset.assetId = assetId;
         asset.name = name;
         asset.issuer = issuer;
-        asset.totalAmount = totalAmount;
-        asset.usedAmount = 0;
-        asset.remainingAmount = totalAmount;
+        asset.description = description;
+        asset.token = token;
+        asset.maxAmount = maxAmount;
+        asset.currentAmount = 0;
         asset.apy = apy;
-        asset.isActive = true;
+        asset.status = AssetStatus.Active;
+        asset.minInvestment = minInvestment;
+        asset.maxInvestment = maxInvestment;
+        asset.period = period;
         asset.addedTime = block.timestamp;
         
         _assetIds.push(assetId);
         
-        emit AssetAdded(assetId, name, issuer, totalAmount, apy);
+        emit AssetAdded(
+            assetId, 
+            name, 
+            issuer, 
+            description, 
+            token, 
+            maxAmount, 
+            apy, 
+            minInvestment, 
+            maxInvestment, 
+            period
+        );
         
         return assetId;
     }
@@ -154,9 +194,9 @@ contract AssetRegistry is
      * @param assetId Asset ID
      */
     function disableAsset(uint256 assetId) external override onlyAdmin assetExists(assetId) {
-        require(_assets[assetId].isActive, "AssetRegistry: asset is already disabled");
-        _assets[assetId].isActive = false;
-        emit AssetStatusUpdated(assetId, false);
+        require(_assets[assetId].status == AssetStatus.Active, "AssetRegistry: asset is not active");
+        _assets[assetId].status = AssetStatus.Inactive;
+        emit AssetStatusUpdated(assetId, AssetStatus.Inactive);
     }
     
     /**
@@ -164,9 +204,9 @@ contract AssetRegistry is
      * @param assetId Asset ID
      */
     function enableAsset(uint256 assetId) external override onlyAdmin assetExists(assetId) {
-        require(!_assets[assetId].isActive, "AssetRegistry: asset is already enabled");
-        _assets[assetId].isActive = true;
-        emit AssetStatusUpdated(assetId, true);
+        require(_assets[assetId].status == AssetStatus.Inactive, "AssetRegistry: asset is not inactive");
+        _assets[assetId].status = AssetStatus.Active;
+        emit AssetStatusUpdated(assetId, AssetStatus.Active);
     }
     
     /**
@@ -183,17 +223,64 @@ contract AssetRegistry is
         Asset storage asset = _assets[assetId];
         
         if (isRefund) {
-            // Refund: decrease used amount, increase remaining amount
-            asset.usedAmount -= amount;
-            asset.remainingAmount += amount;
+            // Refund: decrease current amount
+            require(asset.currentAmount >= amount, "AssetRegistry: insufficient current amount");
+            asset.currentAmount -= amount;
         } else {
-            // Usage: increase used amount, decrease remaining amount
-            require(asset.remainingAmount >= amount, "AssetRegistry: insufficient remaining amount");
-            asset.usedAmount += amount;
-            asset.remainingAmount -= amount;
+            // Usage: increase current amount
+            require(asset.currentAmount + amount <= asset.maxAmount, "AssetRegistry: would exceed max amount");
+            asset.currentAmount += amount;
         }
         
-        emit AssetAmountUpdated(assetId, amount, isRefund, asset.remainingAmount);
+        emit AssetAmountUpdated(assetId, amount, isRefund, asset.currentAmount);
+    }
+    
+    /**
+     * @dev Update asset APY
+     * @param assetId Asset ID
+     * @param apy New APY value
+     */
+    function updateAssetAPY(uint256 assetId, uint256 apy) 
+        external 
+        override 
+        onlyAdmin 
+        assetExists(assetId) 
+    {
+        require(apy > 0, "AssetRegistry: apy must be greater than 0");
+        _assets[assetId].apy = apy;
+        emit AssetAPYUpdated(assetId, apy);
+    }
+    
+    /**
+     * @dev Update asset reward token
+     * @param assetId Asset ID
+     * @param token New reward token address
+     */
+    function updateAssetToken(uint256 assetId, address token) 
+        external 
+        override 
+        onlyAdmin 
+        assetExists(assetId) 
+    {
+        require(token != address(0), "AssetRegistry: token cannot be zero address");
+        _assets[assetId].token = token;
+        emit AssetTokenUpdated(assetId, token);
+    }
+    
+    /**
+     * @dev Update asset period
+     * @param assetId Asset ID
+     * @param period New period in seconds
+     */
+    function updateAssetPeriod(uint256 assetId, uint256 period) 
+        external 
+        override 
+        onlyAdmin 
+        assetExists(assetId) 
+    {
+        require(period > 0, "AssetRegistry: period must be greater than 0");
+        _assets[assetId].period = period;
+        emit AssetPeriodUpdated(assetId, period);
     }
     
     /**
@@ -209,12 +296,17 @@ contract AssetRegistry is
         Asset storage asset = _assets[assetId];
         
         // Check if asset is active
-        if (!asset.isActive) {
+        if (asset.status != AssetStatus.Active) {
             return false;
         }
         
-        // Check if remaining amount is sufficient
-        if (asset.remainingAmount < amount) {
+        // Check investment limits
+        if (amount < asset.minInvestment || amount > asset.maxInvestment) {
+            return false;
+        }
+        
+        // Check if capacity is available
+        if (asset.currentAmount + amount > asset.maxAmount) {
             return false;
         }
         
@@ -264,6 +356,34 @@ contract AssetRegistry is
     }
     
     /**
+     * @dev Get all active assets
+     * @return Active asset list
+     */
+    function getActiveAssets() external view override returns (Asset[] memory) {
+        uint256 activeCount = 0;
+        
+        // Count active assets
+        for (uint256 i = 0; i < _assetIds.length; i++) {
+            if (_assets[_assetIds[i]].status == AssetStatus.Active) {
+                activeCount++;
+            }
+        }
+        
+        // Create array of active assets
+        Asset[] memory activeAssets = new Asset[](activeCount);
+        uint256 index = 0;
+        
+        for (uint256 i = 0; i < _assetIds.length; i++) {
+            if (_assets[_assetIds[i]].status == AssetStatus.Active) {
+                activeAssets[index] = _assets[_assetIds[i]];
+                index++;
+            }
+        }
+        
+        return activeAssets;
+    }
+    
+    /**
      * @dev Check if asset exists
      * @param assetId Asset ID
      * @return Whether asset exists
@@ -295,15 +415,4 @@ contract AssetRegistry is
         override
         onlyAdmin
     {}
-    
-    /**
-     * @dev Update asset APY
-     * @param assetId Asset ID
-     * @param apy New APY value (precision 1e18)
-     */
-    function updateAssetAPY(uint256 assetId, uint256 apy) external override onlyAdmin assetExists(assetId) {
-        require(apy > 0, "AssetRegistry: apy must be greater than 0");
-        _assets[assetId].apy = apy;
-        emit AssetAPYUpdated(assetId, apy);
-    }
 } 
