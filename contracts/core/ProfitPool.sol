@@ -5,9 +5,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IProfitPool.sol";
 import "../interfaces/ISystemParameters.sol";
 import "../interfaces/IAssetRegistry.sol";
@@ -24,7 +24,7 @@ contract ProfitPool is
     UUPSUpgradeable,
     IProfitPool 
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for IERC20;
 
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -132,7 +132,7 @@ contract ProfitPool is
      * @param amount Withdrawal amount
      */
     modifier sufficientBalance(uint256 amount) {
-        uint256 balance = IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
+        uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
         uint256 minBalance = _systemParameters.getProfitPoolMinBalance();
         require(
             balance >= amount + minBalance,
@@ -186,7 +186,7 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDepositedForAsset(msg.sender, assetId, amount);
     }
@@ -202,7 +202,7 @@ contract ProfitPool is
         _totalDeposited += amount;
         
         // Transfer tokens to contract
-        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit ProfitDeposited(msg.sender, amount);
     }
@@ -236,7 +236,7 @@ contract ProfitPool is
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
         // Transfer reward tokens to msg.sender
-        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
+        IERC20(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
         
         emit ProfitWithdrawnFromAsset(msg.sender, assetId, amount);
     }
@@ -263,7 +263,7 @@ contract ProfitPool is
         _lastWithdrawalTime[msg.sender] = block.timestamp;
         
         // Transfer reward tokens to msg.sender
-        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
+        IERC20(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
         
         emit ProfitWithdrawn(msg.sender, amount);
     }
@@ -280,14 +280,14 @@ contract ProfitPool is
     {
         require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
         
-        uint256 balance = IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
+        uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
         require(balance > 0, "ProfitPool: no balance to withdraw");
         
         // Update statistics
         _totalWithdrawn += balance;
         
         // Transfer all tokens to recipient
-        IERC20Upgradeable(_systemParameters.getPlatformToken()).safeTransfer(recipient, balance);
+        IERC20(_systemParameters.getPlatformToken()).safeTransfer(recipient, balance);
         
         emit EmergencyWithdrawal(recipient, balance);
     }
@@ -316,7 +316,7 @@ contract ProfitPool is
         override 
         returns (uint256) 
     {
-        return IERC20Upgradeable(_systemParameters.getPlatformToken()).balanceOf(address(this));
+        return IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
     }
     
     /**

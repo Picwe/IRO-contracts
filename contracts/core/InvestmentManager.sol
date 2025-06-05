@@ -5,9 +5,9 @@ import "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol"
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/IERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "../interfaces/IInvestmentManager.sol";
 import "../interfaces/IAssetRegistry.sol";
 import "../interfaces/IProfitPool.sol";
@@ -25,7 +25,7 @@ contract InvestmentManager is
     UUPSUpgradeable,
     IInvestmentManager 
 {
-    using SafeERC20Upgradeable for IERC20Upgradeable;
+    using SafeERC20 for IERC20;
 
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
@@ -52,6 +52,9 @@ contract InvestmentManager is
     // Blacklist mapping
     mapping(address => bool) private _blacklist;
     
+    // Whitelist mapping
+    mapping(address => bool) private _whitelist;
+    
     // Event definitions
     event InvestmentCreated(
         uint256 indexed investmentId,
@@ -76,6 +79,8 @@ contract InvestmentManager is
     );
     
     event BlacklistUpdated(address indexed account, bool status);
+    
+    event WhitelistUpdated(address indexed account, bool status);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -117,8 +122,21 @@ contract InvestmentManager is
      * @return Investment token address
      */
     function getInvestmentToken() 
+        public 
+        view 
+        returns (address) 
+    {
+        return _systemParameters.getPlatformToken();
+    }
+    
+    /**
+     * @dev Get reward token address
+     * @return Reward token address
+     */
+    function getRewardToken() 
         external 
         view 
+        override
         returns (address) 
     {
         return _systemParameters.getPlatformToken();
@@ -228,7 +246,7 @@ contract InvestmentManager is
         _assetRegistry.updateAssetAmount(assetId, amount, false);
         
         // Transfer platform tokens to contract
-        IERC20Upgradeable(getInvestmentToken()).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(getInvestmentToken()).safeTransferFrom(msg.sender, address(this), amount);
         
         emit InvestmentCreated(
             investmentId,
@@ -339,7 +357,7 @@ contract InvestmentManager is
         }
         
         // Return principal to user using platform token
-        IERC20Upgradeable(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
+        IERC20(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
         
         // Update last redemption time
         _lastRedemptionTime[msg.sender] = block.timestamp;
@@ -376,7 +394,7 @@ contract InvestmentManager is
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
         // Return principal to user using platform token
-        IERC20Upgradeable(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
+        IERC20(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
         
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Cancelled);
     }
@@ -410,6 +428,34 @@ contract InvestmentManager is
     }
     
     /**
+     * @dev Add user to whitelist
+     * @param account User address
+     */
+    function addToWhitelist(address account) 
+        external 
+        override 
+        onlyAdmin 
+    {
+        require(!_whitelist[account], "InvestmentManager: account already whitelisted");
+        _whitelist[account] = true;
+        emit WhitelistUpdated(account, true);
+    }
+    
+    /**
+     * @dev Remove user from whitelist
+     * @param account User address
+     */
+    function removeFromWhitelist(address account) 
+        external 
+        override 
+        onlyAdmin 
+    {
+        require(_whitelist[account], "InvestmentManager: account not whitelisted");
+        _whitelist[account] = false;
+        emit WhitelistUpdated(account, false);
+    }
+    
+    /**
      * @dev Check if user is blacklisted
      * @param account User address
      * @return Whether user is blacklisted
@@ -421,6 +467,20 @@ contract InvestmentManager is
         returns (bool) 
     {
         return _blacklist[account];
+    }
+    
+    /**
+     * @dev Check if user is whitelisted
+     * @param account User address
+     * @return Whether user is whitelisted
+     */
+    function isWhitelisted(address account) 
+        external 
+        view 
+        override 
+        returns (bool) 
+    {
+        return _whitelist[account];
     }
     
     /**

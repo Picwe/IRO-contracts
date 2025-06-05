@@ -61,20 +61,7 @@ contract AssetRegistry is
     
     event AssetInvestmentTokenUpdated(uint256 indexed assetId, address investmentToken);
     
-    struct Asset {
-        uint256 assetId;
-        string name;
-        string issuer;
-        string description;
-        uint256 apy;
-        uint256 maxAmount;
-        uint256 currentAmount;
-        AssetStatus status;
-        uint256 minInvestment;
-        uint256 maxInvestment;
-        uint256 period;
-        uint256 addedTime;
-    }
+    // Using Asset struct from IAssetRegistry interface
     
     /**
      * @dev Initialization function, replaces constructor
@@ -117,7 +104,7 @@ contract AssetRegistry is
     /**
      * @dev Ensures asset exists
      */
-    modifier assetExists(uint256 assetId) {
+    modifier assetMustExist(uint256 assetId) {
         require(_assets[assetId].assetId == assetId, "AssetRegistry: asset does not exist");
         _;
     }
@@ -189,7 +176,7 @@ contract AssetRegistry is
      * @dev Disable asset
      * @param assetId Asset ID
      */
-    function disableAsset(uint256 assetId) external override onlyAdmin assetExists(assetId) {
+    function disableAsset(uint256 assetId) external override onlyAdmin assetMustExist(assetId) {
         require(_assets[assetId].status == AssetStatus.Active, "AssetRegistry: asset is not active");
         _assets[assetId].status = AssetStatus.Inactive;
         emit AssetStatusUpdated(assetId, AssetStatus.Inactive);
@@ -199,7 +186,7 @@ contract AssetRegistry is
      * @dev Enable asset
      * @param assetId Asset ID
      */
-    function enableAsset(uint256 assetId) external override onlyAdmin assetExists(assetId) {
+    function enableAsset(uint256 assetId) external override onlyAdmin assetMustExist(assetId) {
         require(_assets[assetId].status == AssetStatus.Inactive, "AssetRegistry: asset is not inactive");
         _assets[assetId].status = AssetStatus.Active;
         emit AssetStatusUpdated(assetId, AssetStatus.Active);
@@ -215,7 +202,7 @@ contract AssetRegistry is
         uint256 assetId,
         uint256 amount,
         bool isRefund
-    ) external override onlyOperator assetExists(assetId) {
+    ) external override onlyOperator assetMustExist(assetId) {
         Asset storage asset = _assets[assetId];
         
         if (isRefund) {
@@ -231,6 +218,33 @@ contract AssetRegistry is
         emit AssetAmountUpdated(assetId, amount, isRefund, asset.currentAmount);
     }
     
+    /**
+     * @dev Update asset APY
+     * @param assetId Asset ID
+     * @param apy New APY value (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
+     */
+    function updateAssetAPY(uint256 assetId, uint256 apy) external override onlyAdmin assetMustExist(assetId) {
+        require(apy > 0, "AssetRegistry: apy must be greater than 0");
+        
+        Asset storage asset = _assets[assetId];
+        asset.apy = apy;
+        
+        emit AssetAPYUpdated(assetId, apy);
+    }
+    
+    /**
+     * @dev Update asset period
+     * @param assetId Asset ID
+     * @param period New period in seconds
+     */
+    function updateAssetPeriod(uint256 assetId, uint256 period) external override onlyAdmin assetMustExist(assetId) {
+        require(period > 0, "AssetRegistry: period must be greater than 0");
+        
+        Asset storage asset = _assets[assetId];
+        asset.period = period;
+        
+        emit AssetPeriodUpdated(assetId, period);
+    }
     
     /**
      * @dev Validate investment
@@ -241,7 +255,7 @@ contract AssetRegistry is
     function validateInvestment(
         uint256 assetId,
         uint256 amount
-    ) external view override assetExists(assetId) returns (bool) {
+    ) external view override assetMustExist(assetId) returns (bool) {
         Asset storage asset = _assets[assetId];
         
         // Check if asset is active
@@ -267,7 +281,7 @@ contract AssetRegistry is
      * @param assetId Asset ID
      * @return Asset information
      */
-    function getAsset(uint256 assetId) external view override assetExists(assetId) returns (Asset memory) {
+    function getAsset(uint256 assetId) external view override assetMustExist(assetId) returns (Asset memory) {
         return _assets[assetId];
     }
     
