@@ -39,6 +39,9 @@ contract SystemParameters is
     // Platform weUSD token address
     address private _platformToken;
     
+    // Period APY mapping (period => APY)
+    mapping(uint256 => uint256) private _periodAPY;
+    
     // Event definitions
     event MinInvestmentAmountUpdated(uint256 amount);
     event MaxInvestmentAmountUpdated(uint256 amount);
@@ -46,6 +49,7 @@ contract SystemParameters is
     event ProfitPoolMinBalanceUpdated(uint256 amount);
     event ProfitWithdrawalCooldownUpdated(uint256 cooldown);
     event PlatformTokenUpdated(address token);
+    event PeriodAPYUpdated(uint256 period, uint256 apy);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -186,6 +190,30 @@ contract SystemParameters is
      */
     function getPlatformToken() external view override returns (address) {
         return _platformToken;
+    }
+    
+    /**
+     * @dev Set APY for a period
+     * @param period Period (in seconds)
+     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
+     */
+    function setPeriodAPY(uint256 period, uint256 apy) external override onlyAdmin {
+        require(period > 0, "SystemParameters: period must be greater than 0");
+        require(apy > 0, "SystemParameters: apy must be greater than 0");
+        _periodAPY[period] = apy;
+        emit PeriodAPYUpdated(period, apy);
+    }
+    
+    /**
+     * @dev Get APY for a period
+     * @param period Period (in seconds)
+     * @return Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
+     */
+    function getPeriodAPY(uint256 period) external view override returns (uint256) {
+        require(period > 0, "SystemParameters: period must be greater than 0");
+        uint256 apy = _periodAPY[period];
+        require(apy > 0, "SystemParameters: no APY set for this period");
+        return apy;
     }
     
     /**
