@@ -8,7 +8,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   console.log("Deploying account:", deployer.address);
   
-  // 创建报告对象
+  // Create report object
   const deploymentReport = {
     environment: {
       network: network.name,
@@ -27,7 +27,7 @@ async function main() {
   await weUSD.waitForDeployment();
   console.log("ERC20Mock (weUSD) deployed to:", await weUSD.getAddress());
   
-  // 添加到报告
+  // Add to report
   deploymentReport.contracts.weUSD = {
     address: await weUSD.getAddress(),
     name: "weUSD",
@@ -46,7 +46,7 @@ async function main() {
   await systemParameters.waitForDeployment();
   console.log("SystemParameters deployed to:", await systemParameters.getAddress());
   
-  // 添加到报告
+  // Add to report
   deploymentReport.contracts.systemParameters = {
     address: await systemParameters.getAddress(),
     implementation: await upgrades.erc1967.getImplementationAddress(await systemParameters.getAddress()),
@@ -71,7 +71,7 @@ async function main() {
   await systemParameters.setPeriodAPY(threeMonths, ethers.parseEther("0.25")); // 25% APY
   await systemParameters.setPeriodAPY(sixMonths, ethers.parseEther("0.30")); // 30% APY
   
-  // 添加参数到报告
+  // Add parameters to report
   deploymentReport.contracts.systemParameters.parameters = {
     periodAPY: {
       [oneDay]: "5%",
@@ -87,7 +87,7 @@ async function main() {
   await systemParameters.setMinInvestmentAmount(ethers.parseEther("10")); // Minimum investment 10 weUSD
   await systemParameters.setMaxInvestmentAmount(ethers.parseEther("100000000")); // Maximum investment 100M weUSD
   
-  // 添加投资限制到报告
+  // Add investment limits to report
   deploymentReport.contracts.systemParameters.parameters.investmentLimits = {
     min: "10 weUSD",
     max: "100,000,000 weUSD"
@@ -96,7 +96,7 @@ async function main() {
   // Set investment cooldown - set to 1 minute for testing
   await systemParameters.setInvestmentCooldown(60);
   
-  // 添加冷却期到报告
+  // Add cooldown to report
   deploymentReport.contracts.systemParameters.parameters.investmentCooldown = "60 seconds";
   
   // Deploy asset registry contract
@@ -109,7 +109,7 @@ async function main() {
   await assetRegistry.waitForDeployment();
   console.log("AssetRegistry deployed to:", await assetRegistry.getAddress());
   
-  // 添加到报告
+  // Add to report
   deploymentReport.contracts.assetRegistry = {
     address: await assetRegistry.getAddress(),
     implementation: await upgrades.erc1967.getImplementationAddress(await assetRegistry.getAddress()),
@@ -148,7 +148,7 @@ async function main() {
   const asset2Receipt = await asset2Tx.wait();
   const asset2Id = asset2Receipt.logs[0].args[0];
   
-  // 添加资产到报告
+  // Add assets to report
   deploymentReport.contracts.assetRegistry.assets = [
     {
       id: asset1Id.toString(),
@@ -188,7 +188,7 @@ async function main() {
   await profitPool.waitForDeployment();
   console.log("ProfitPool deployed to:", await profitPool.getAddress());
   
-  // 添加到报告
+  // Add to report
   deploymentReport.contracts.profitPool = {
     address: await profitPool.getAddress(),
     implementation: await upgrades.erc1967.getImplementationAddress(await profitPool.getAddress()),
@@ -215,7 +215,7 @@ async function main() {
   await investmentManager.waitForDeployment();
   console.log("InvestmentManager deployed to:", await investmentManager.getAddress());
   
-  // 添加到报告
+  // Add to report
   deploymentReport.contracts.investmentManager = {
     address: await investmentManager.getAddress(),
     implementation: await upgrades.erc1967.getImplementationAddress(await investmentManager.getAddress()),
@@ -232,7 +232,7 @@ async function main() {
   console.log("Setting contract permissions...");
   await assetRegistry.grantRole(await assetRegistry.OPERATOR_ROLE(), await investmentManager.getAddress());
   
-  // 添加权限到报告
+  // Add permissions to report
   deploymentReport.permissions.push({
     contract: "AssetRegistry",
     address: await assetRegistry.getAddress(),
@@ -244,7 +244,7 @@ async function main() {
   // Set investment manager as operator for profit pool
   await profitPool.grantRole(await profitPool.OPERATOR_ROLE(), await investmentManager.getAddress());
   
-  // 添加权限到报告
+  // Add permissions to report
   deploymentReport.permissions.push({
     contract: "ProfitPool",
     address: await profitPool.getAddress(),
@@ -259,18 +259,18 @@ async function main() {
   await weUSD.approve(await profitPool.getAddress(), ethers.parseEther("10000"));
   await profitPool.depositProfit(ethers.parseEther("10000"));
   
-  // 添加测试资金到报告
+  // Add test funds to report
   deploymentReport.contracts.profitPool.testFunds = {
     amount: "10,000 weUSD",
     from: deployer.address
   };
   
-  // 收集角色信息
+  // Collect role information
   const adminRole = await systemParameters.ADMIN_ROLE();
   const defaultAdminRole = await systemParameters.DEFAULT_ADMIN_ROLE();
   const operatorRole = await assetRegistry.OPERATOR_ROLE();
   
-  // 添加角色信息到报告 (不使用getRoleMemberCount，直接记录已知的角色分配)
+  // Add role information to report (not using getRoleMemberCount, directly record known role assignments)
   deploymentReport.roles = {
     systemParameters: {
       ADMIN_ROLE: {
@@ -318,7 +318,7 @@ async function main() {
   console.log("ProfitPool:", await profitPool.getAddress());
   console.log("InvestmentManager:", await investmentManager.getAddress());
   
-  // 生成报告文件
+  // Generate report files
   const reportDir = path.join(__dirname, '../../reports');
   if (!fs.existsSync(reportDir)) {
     fs.mkdirSync(reportDir, { recursive: true });
@@ -329,141 +329,141 @@ async function main() {
   fs.writeFileSync(reportPath, JSON.stringify(deploymentReport, null, 2));
   console.log(`Deployment report saved to: ${reportPath}`);
   
-  // 生成可读性更强的Markdown报告
+  // Generate more readable Markdown report
   const markdownReport = generateMarkdownReport(deploymentReport);
   const markdownPath = path.join(reportDir, `deployment-report-${network.name}-${timestamp}.md`);
   fs.writeFileSync(markdownPath, markdownReport);
   console.log(`Markdown report saved to: ${markdownPath}`);
 }
 
-// 生成Markdown格式的报告
+// Generate Markdown format report
 function generateMarkdownReport(report) {
-  let markdown = `# 部署报告 - ${report.environment.network}\n\n`;
+  let markdown = `# Deployment Report - ${report.environment.network}\n\n`;
   
-  // 环境信息
-  markdown += `## 环境信息\n\n`;
-  markdown += `- **网络**: ${report.environment.network}\n`;
-  markdown += `- **链ID**: ${report.environment.chainId}\n`;
-  markdown += `- **部署时间**: ${report.environment.deployTime}\n`;
-  markdown += `- **部署账户**: ${report.environment.deployer}\n\n`;
+  // Environment information
+  markdown += `## Environment Information\n\n`;
+  markdown += `- **Network**: ${report.environment.network}\n`;
+  markdown += `- **Chain ID**: ${report.environment.chainId}\n`;
+  markdown += `- **Deployment Time**: ${report.environment.deployTime}\n`;
+  markdown += `- **Deployer Account**: ${report.environment.deployer}\n\n`;
   
-  // 合约信息
-  markdown += `## 合约信息\n\n`;
+  // Contract information
+  markdown += `## Contract Information\n\n`;
   
   // weUSD
   markdown += `### weUSD Token\n\n`;
-  markdown += `- **地址**: \`${report.contracts.weUSD.address}\`\n`;
-  markdown += `- **名称**: ${report.contracts.weUSD.name}\n`;
-  markdown += `- **符号**: ${report.contracts.weUSD.symbol}\n`;
-  markdown += `- **小数位**: ${report.contracts.weUSD.decimals}\n\n`;
+  markdown += `- **Address**: \`${report.contracts.weUSD.address}\`\n`;
+  markdown += `- **Name**: ${report.contracts.weUSD.name}\n`;
+  markdown += `- **Symbol**: ${report.contracts.weUSD.symbol}\n`;
+  markdown += `- **Decimals**: ${report.contracts.weUSD.decimals}\n\n`;
   
   // SystemParameters
   markdown += `### SystemParameters\n\n`;
-  markdown += `- **代理地址**: \`${report.contracts.systemParameters.address}\`\n`;
-  markdown += `- **实现地址**: \`${report.contracts.systemParameters.implementation}\`\n`;
-  markdown += `- **代理类型**: ${report.contracts.systemParameters.proxy}\n\n`;
+  markdown += `- **Proxy Address**: \`${report.contracts.systemParameters.address}\`\n`;
+  markdown += `- **Implementation Address**: \`${report.contracts.systemParameters.implementation}\`\n`;
+  markdown += `- **Proxy Type**: ${report.contracts.systemParameters.proxy}\n\n`;
   
-  markdown += `#### 参数设置\n\n`;
-  markdown += `**APY设置**:\n\n`;
+  markdown += `#### Parameter Settings\n\n`;
+  markdown += `**APY Settings**:\n\n`;
   for (const [period, apy] of Object.entries(report.contracts.systemParameters.parameters.periodAPY)) {
-    markdown += `- ${period}秒: ${apy}\n`;
+    markdown += `- ${period} seconds: ${apy}\n`;
   }
-  markdown += `\n**投资限制**:\n\n`;
-  markdown += `- 最小投资额: ${report.contracts.systemParameters.parameters.investmentLimits.min}\n`;
-  markdown += `- 最大投资额: ${report.contracts.systemParameters.parameters.investmentLimits.max}\n`;
-  markdown += `- 投资冷却期: ${report.contracts.systemParameters.parameters.investmentCooldown}\n\n`;
+  markdown += `\n**Investment Limits**:\n\n`;
+  markdown += `- Minimum Investment: ${report.contracts.systemParameters.parameters.investmentLimits.min}\n`;
+  markdown += `- Maximum Investment: ${report.contracts.systemParameters.parameters.investmentLimits.max}\n`;
+  markdown += `- Investment Cooldown: ${report.contracts.systemParameters.parameters.investmentCooldown}\n\n`;
   
   // AssetRegistry
   markdown += `### AssetRegistry\n\n`;
-  markdown += `- **代理地址**: \`${report.contracts.assetRegistry.address}\`\n`;
-  markdown += `- **实现地址**: \`${report.contracts.assetRegistry.implementation}\`\n`;
-  markdown += `- **代理类型**: ${report.contracts.assetRegistry.proxy}\n`;
-  markdown += `- **依赖**:\n`;
+  markdown += `- **Proxy Address**: \`${report.contracts.assetRegistry.address}\`\n`;
+  markdown += `- **Implementation Address**: \`${report.contracts.assetRegistry.implementation}\`\n`;
+  markdown += `- **Proxy Type**: ${report.contracts.assetRegistry.proxy}\n`;
+  markdown += `- **Dependencies**:\n`;
   markdown += `  - SystemParameters: \`${report.contracts.assetRegistry.dependencies.systemParameters}\`\n\n`;
   
-  markdown += `#### 资产\n\n`;
+  markdown += `#### Assets\n\n`;
   for (const asset of report.contracts.assetRegistry.assets) {
     markdown += `**${asset.name}**:\n\n`;
     markdown += `- ID: ${asset.id}\n`;
-    markdown += `- 发行方: ${asset.issuer}\n`;
-    markdown += `- 描述: ${asset.description}\n`;
-    markdown += `- 最大金额: ${asset.maxAmount}\n`;
+    markdown += `- Issuer: ${asset.issuer}\n`;
+    markdown += `- Description: ${asset.description}\n`;
+    markdown += `- Maximum Amount: ${asset.maxAmount}\n`;
     markdown += `- APY: ${asset.apy}\n`;
-    markdown += `- 最小投资: ${asset.minInvestment}\n`;
-    markdown += `- 最大投资: ${asset.maxInvestment}\n`;
-    markdown += `- 周期: ${asset.period}\n\n`;
+    markdown += `- Minimum Investment: ${asset.minInvestment}\n`;
+    markdown += `- Maximum Investment: ${asset.maxInvestment}\n`;
+    markdown += `- Period: ${asset.period}\n\n`;
   }
   
   // ProfitPool
   markdown += `### ProfitPool\n\n`;
-  markdown += `- **代理地址**: \`${report.contracts.profitPool.address}\`\n`;
-  markdown += `- **实现地址**: \`${report.contracts.profitPool.implementation}\`\n`;
-  markdown += `- **代理类型**: ${report.contracts.profitPool.proxy}\n`;
-  markdown += `- **依赖**:\n`;
+  markdown += `- **Proxy Address**: \`${report.contracts.profitPool.address}\`\n`;
+  markdown += `- **Implementation Address**: \`${report.contracts.profitPool.implementation}\`\n`;
+  markdown += `- **Proxy Type**: ${report.contracts.profitPool.proxy}\n`;
+  markdown += `- **Dependencies**:\n`;
   markdown += `  - SystemParameters: \`${report.contracts.profitPool.dependencies.systemParameters}\`\n`;
   markdown += `  - AssetRegistry: \`${report.contracts.profitPool.dependencies.assetRegistry}\`\n\n`;
   
   if (report.contracts.profitPool.testFunds) {
-    markdown += `#### 测试资金\n\n`;
-    markdown += `- 金额: ${report.contracts.profitPool.testFunds.amount}\n`;
-    markdown += `- 来源: \`${report.contracts.profitPool.testFunds.from}\`\n\n`;
+    markdown += `#### Test Funds\n\n`;
+    markdown += `- Amount: ${report.contracts.profitPool.testFunds.amount}\n`;
+    markdown += `- Source: \`${report.contracts.profitPool.testFunds.from}\`\n\n`;
   }
   
   // InvestmentManager
   markdown += `### InvestmentManager\n\n`;
-  markdown += `- **代理地址**: \`${report.contracts.investmentManager.address}\`\n`;
-  markdown += `- **实现地址**: \`${report.contracts.investmentManager.implementation}\`\n`;
-  markdown += `- **代理类型**: ${report.contracts.investmentManager.proxy}\n`;
-  markdown += `- **依赖**:\n`;
+  markdown += `- **Proxy Address**: \`${report.contracts.investmentManager.address}\`\n`;
+  markdown += `- **Implementation Address**: \`${report.contracts.investmentManager.implementation}\`\n`;
+  markdown += `- **Proxy Type**: ${report.contracts.investmentManager.proxy}\n`;
+  markdown += `- **Dependencies**:\n`;
   markdown += `  - SystemParameters: \`${report.contracts.investmentManager.dependencies.systemParameters}\`\n`;
   markdown += `  - AssetRegistry: \`${report.contracts.investmentManager.dependencies.assetRegistry}\`\n`;
   markdown += `  - ProfitPool: \`${report.contracts.investmentManager.dependencies.profitPool}\`\n\n`;
   
-  // 权限信息
-  markdown += `## 权限信息\n\n`;
+  // Permission information
+  markdown += `## Permission Information\n\n`;
   for (const permission of report.permissions) {
-    markdown += `- **${permission.contract}** (\`${permission.address}\`) 授予 **${permission.grantee}** (\`${permission.granteeAddress}\`) 角色: **${permission.role}**\n`;
+    markdown += `- **${permission.contract}** (\`${permission.address}\`) granted **${permission.grantee}** (\`${permission.granteeAddress}\`) role: **${permission.role}**\n`;
   }
   markdown += `\n`;
   
-  // 角色详情
-  markdown += `## 角色详情\n\n`;
+  // Role details
+  markdown += `## Role Details\n\n`;
   
-  // SystemParameters角色
-  markdown += `### SystemParameters角色\n\n`;
+  // SystemParameters roles
+  markdown += `### SystemParameters Roles\n\n`;
   markdown += `**ADMIN_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.systemParameters.ADMIN_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.systemParameters.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.systemParameters.ADMIN_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.systemParameters.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
   markdown += `**DEFAULT_ADMIN_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.systemParameters.DEFAULT_ADMIN_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.systemParameters.DEFAULT_ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.systemParameters.DEFAULT_ADMIN_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.systemParameters.DEFAULT_ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
-  // AssetRegistry角色
-  markdown += `### AssetRegistry角色\n\n`;
+  // AssetRegistry roles
+  markdown += `### AssetRegistry Roles\n\n`;
   markdown += `**ADMIN_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.assetRegistry.ADMIN_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.assetRegistry.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.assetRegistry.ADMIN_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.assetRegistry.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
   markdown += `**OPERATOR_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.assetRegistry.OPERATOR_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.assetRegistry.OPERATOR_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.assetRegistry.OPERATOR_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.assetRegistry.OPERATOR_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
-  // ProfitPool角色
-  markdown += `### ProfitPool角色\n\n`;
+  // ProfitPool roles
+  markdown += `### ProfitPool Roles\n\n`;
   markdown += `**ADMIN_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.profitPool.ADMIN_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.profitPool.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.profitPool.ADMIN_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.profitPool.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
   markdown += `**OPERATOR_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.profitPool.OPERATOR_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.profitPool.OPERATOR_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.profitPool.OPERATOR_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.profitPool.OPERATOR_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
-  // InvestmentManager角色
-  markdown += `### InvestmentManager角色\n\n`;
+  // InvestmentManager roles
+  markdown += `### InvestmentManager Roles\n\n`;
   markdown += `**ADMIN_ROLE**:\n\n`;
-  markdown += `- 成员数量: ${report.roles.investmentManager.ADMIN_ROLE.count}\n`;
-  markdown += `- 成员: ${report.roles.investmentManager.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
+  markdown += `- Member Count: ${report.roles.investmentManager.ADMIN_ROLE.count}\n`;
+  markdown += `- Members: ${report.roles.investmentManager.ADMIN_ROLE.members.map(m => `\`${m}\``).join(', ')}\n\n`;
   
   return markdown;
 }
