@@ -191,17 +191,17 @@ contract ProfitPool is
      * @dev Deposit profit
      * @param amount Profit amount
      */
-    function depositProfit(uint256 amount) external override nonReentrant {
-        require(amount > 0, "ProfitPool: amount must be greater than 0");
+    // function depositProfit(uint256 amount) external override nonReentrant {
+    //     require(amount > 0, "ProfitPool: amount must be greater than 0");
         
-        // Update statistics
-        _totalDeposited += amount;
+    //     // Update statistics
+    //     _totalDeposited += amount;
         
-        // Transfer tokens to contract
-        IERC20(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
+    //     // Transfer tokens to contract
+    //     IERC20(_systemParameters.getPlatformToken()).safeTransferFrom(msg.sender, address(this), amount);
         
-        emit ProfitDeposited(msg.sender, amount);
-    }
+    //     emit ProfitDeposited(msg.sender, amount);
+    // }
     
     /**
      * @dev Withdraw profit from asset-specific profit pool

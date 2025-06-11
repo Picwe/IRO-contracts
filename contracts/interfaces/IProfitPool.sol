@@ -26,7 +26,7 @@ interface IProfitPool {
      * @dev Deposit profit
      * @param amount Profit amount
      */
-    function depositProfit(uint256 amount) external;
+    // function depositProfit(uint256 amount) external;
     
     /**
      * @dev Withdraw profit from a specific asset's profit pool
