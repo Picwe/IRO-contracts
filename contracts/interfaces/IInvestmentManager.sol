@@ -67,6 +67,18 @@ interface IInvestmentManager {
     }
     
     /**
+     * @dev Paginated investments result structure
+     * @param investments Array of investments for the current page
+     * @param totalCount Total number of investments for the user
+     * @param hasNextPage Whether there are more pages
+     */
+    struct PaginatedInvestments {
+        Investment[] investments;
+        uint256 totalCount;
+        bool hasNextPage;
+    }
+    
+    /**
      * @dev Get investment token address
      * @return Investment token address
      */
@@ -177,4 +189,17 @@ interface IInvestmentManager {
      * @return Investment summary
      */
     function getUserInvestmentSummary(address account) external view returns (UserInvestmentSummary memory);
+    
+    /**
+     * @dev Get user investments with pagination
+     * @param account User address
+     * @param offset Starting index (0-based)
+     * @param limit Maximum number of investments to return
+     * @return Paginated investments result
+     */
+    function getUserInvestmentsPaginated(
+        address account, 
+        uint256 offset, 
+        uint256 limit
+    ) external view returns (PaginatedInvestments memory);
 } 

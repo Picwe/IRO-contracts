@@ -578,6 +578,74 @@ contract InvestmentManager is
     }
     
     /**
+     * @dev Get user investments with pagination
+     * @param account User address
+     * @param offset Starting index (0-based)
+     * @param limit Maximum number of investments to return
+     * @return Paginated investments result
+     */
+    function getUserInvestmentsPaginated(
+        address account, 
+        uint256 offset, 
+        uint256 limit
+    ) 
+        external 
+        view 
+        override 
+        returns (IInvestmentManager.PaginatedInvestments memory) 
+    {
+        uint256[] memory investmentIds = _userInvestments[account];
+        uint256 totalCount = investmentIds.length;
+        
+        // Input validation
+        require(limit > 0, "InvestmentManager: limit must be greater than 0");
+        require(limit <= 100, "InvestmentManager: limit cannot exceed 100");
+        
+        // Calculate actual slice size
+        uint256 start = offset;
+        uint256 end = offset + limit;
+        
+        // Handle edge cases
+        if (start >= totalCount) {
+            // Return empty result if offset is beyond total count
+            Investment[] memory emptyInvestments = new Investment[](0);
+            return IInvestmentManager.PaginatedInvestments({
+                investments: emptyInvestments,
+                totalCount: totalCount,
+                hasNextPage: false
+            });
+        }
+        
+        if (end > totalCount) {
+            end = totalCount;
+        }
+        
+        // Create result array
+        uint256 resultLength = end - start;
+        Investment[] memory investments = new Investment[](resultLength);
+        
+        // Fill the result array with investment data
+        for (uint256 i = 0; i < resultLength; i++) {
+            uint256 investmentId = investmentIds[start + i];
+            investments[i] = _investments[investmentId];
+            
+            // Update current profit for active investments
+            if (investments[i].status == InvestmentStatus.Active) {
+                investments[i].profit = calculateProfit(investmentId);
+            }
+        }
+        
+        // Check if there are more pages
+        bool hasNextPage = end < totalCount;
+        
+        return IInvestmentManager.PaginatedInvestments({
+            investments: investments,
+            totalCount: totalCount,
+            hasNextPage: hasNextPage
+        });
+    }
+    
+    /**
      * @dev Execute upgrade authorization check
      * @param newImplementation New implementation contract address
      */

@@ -220,6 +220,26 @@
       "address": "0xCb0d184B0376a8d6DCBD196b2C521A164D1214C7",
       "txHash": "0x3e4166f5fcc1707d612a9e167c9e18e2404058f930e8e9de7b7450812775b17c",
       "kind": "uups"
+    },
+    {
+      "address": "0x0eE8D062baaDfa64DB537b8ABC47328E7F17A5f5",
+      "txHash": "0x695343dc906569bf7d1fa4dcbd186c6282191805233c3a1ceb4a60c468714c63",
+      "kind": "uups"
+    },
+    {
+      "address": "0xAc6633C17086d16B485b018612E3314B1B8b5935",
+      "txHash": "0x68bc267b414d82ed35147073a8ac8ebfa73becf7c9884c5548c930f2e1b07c81",
+      "kind": "uups"
+    },
+    {
+      "address": "0xe90503AbA7829EcEBbd87e7C59d5F65b7b461664",
+      "txHash": "0xa26c66eefdd179a44d7e178b5ce17c7ad3384767555ab0fb79a9eec6a274bf22",
+      "kind": "uups"
+    },
+    {
+      "address": "0xB2D54Efe834C81B3de48f80BD15aC8981f41E5b9",
+      "txHash": "0xc0b7e21a83cc504f2b2e140830fdec84143a8a4df782898b6c37e63fb5051d8c",
+      "kind": "uups"
     }
   ],
   "impls": {
@@ -1436,6 +1456,349 @@
           "t_mapping(t_uint256,t_uint256)": {
             "label": "mapping(uint256 => uint256)",
             "numberOfBytes": "32"
+          }
+        },
+        "namespaces": {
+          "erc7201:openzeppelin.storage.ReentrancyGuard": [
+            {
+              "contract": "ReentrancyGuardUpgradeable",
+              "label": "_status",
+              "type": "t_uint256",
+              "src": "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol:43",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Pausable": [
+            {
+              "contract": "PausableUpgradeable",
+              "label": "_paused",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol:21",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.AccessControl": [
+            {
+              "contract": "AccessControlUpgradeable",
+              "label": "_roles",
+              "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+              "src": "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol:61",
+              "offset": 0,
+              "slot": "0"
+            }
+          ],
+          "erc7201:openzeppelin.storage.Initializable": [
+            {
+              "contract": "Initializable",
+              "label": "_initialized",
+              "type": "t_uint64",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:69",
+              "offset": 0,
+              "slot": "0"
+            },
+            {
+              "contract": "Initializable",
+              "label": "_initializing",
+              "type": "t_bool",
+              "src": "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol:73",
+              "offset": 8,
+              "slot": "0"
+            }
+          ]
+        }
+      }
+    },
+    "36aa6a7e33cf51467be8e81a929c90d1aaab1b356c7d6984e3988ca7adc33442": {
+      "address": "0xb0B489a2aBc6e08123371f9744D7420bc1835Acf",
+      "txHash": "0xaf9d1f3cebeda267e4318f5cb7abb1cbc87f8116d9775344140e72af15c11c0f",
+      "layout": {
+        "solcVersion": "0.8.25",
+        "storage": [
+          {
+            "label": "_systemParameters",
+            "offset": 0,
+            "slot": "0",
+            "type": "t_contract(ISystemParameters)4431",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:34"
+          },
+          {
+            "label": "_assetRegistry",
+            "offset": 0,
+            "slot": "1",
+            "type": "t_contract(IAssetRegistry)4063",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:37"
+          },
+          {
+            "label": "_profitPool",
+            "offset": 0,
+            "slot": "2",
+            "type": "t_contract(IProfitPool)4339",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:40"
+          },
+          {
+            "label": "_investments",
+            "offset": 0,
+            "slot": "3",
+            "type": "t_mapping(t_uint256,t_struct(Investment)4097_storage)",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:43"
+          },
+          {
+            "label": "_nextInvestmentId",
+            "offset": 0,
+            "slot": "4",
+            "type": "t_uint256",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:44"
+          },
+          {
+            "label": "_userInvestments",
+            "offset": 0,
+            "slot": "5",
+            "type": "t_mapping(t_address,t_array(t_uint256)dyn_storage)",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:47"
+          },
+          {
+            "label": "_lastRedemptionTime",
+            "offset": 0,
+            "slot": "6",
+            "type": "t_mapping(t_address,t_uint256)",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:50"
+          },
+          {
+            "label": "_blacklist",
+            "offset": 0,
+            "slot": "7",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:53"
+          },
+          {
+            "label": "_whitelist",
+            "offset": 0,
+            "slot": "8",
+            "type": "t_mapping(t_address,t_bool)",
+            "contract": "InvestmentManager",
+            "src": "contracts/core/InvestmentManager.sol:56"
+          }
+        ],
+        "types": {
+          "t_address": {
+            "label": "address",
+            "numberOfBytes": "20"
+          },
+          "t_bool": {
+            "label": "bool",
+            "numberOfBytes": "1"
+          },
+          "t_bytes32": {
+            "label": "bytes32",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_bool)": {
+            "label": "mapping(address => bool)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_bytes32,t_struct(RoleData)24_storage)": {
+            "label": "mapping(bytes32 => struct AccessControlUpgradeable.RoleData)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(AccessControlStorage)34_storage": {
+            "label": "struct AccessControlUpgradeable.AccessControlStorage",
+            "members": [
+              {
+                "label": "_roles",
+                "type": "t_mapping(t_bytes32,t_struct(RoleData)24_storage)",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(InitializableStorage)145_storage": {
+            "label": "struct Initializable.InitializableStorage",
+            "members": [
+              {
+                "label": "_initialized",
+                "type": "t_uint64",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "_initializing",
+                "type": "t_bool",
+                "offset": 8,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(PausableStorage)296_storage": {
+            "label": "struct PausableUpgradeable.PausableStorage",
+            "members": [
+              {
+                "label": "_paused",
+                "type": "t_bool",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(ReentrancyGuardStorage)360_storage": {
+            "label": "struct ReentrancyGuardUpgradeable.ReentrancyGuardStorage",
+            "members": [
+              {
+                "label": "_status",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              }
+            ],
+            "numberOfBytes": "32"
+          },
+          "t_struct(RoleData)24_storage": {
+            "label": "struct AccessControlUpgradeable.RoleData",
+            "members": [
+              {
+                "label": "hasRole",
+                "type": "t_mapping(t_address,t_bool)",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "adminRole",
+                "type": "t_bytes32",
+                "offset": 0,
+                "slot": "1"
+              }
+            ],
+            "numberOfBytes": "64"
+          },
+          "t_uint256": {
+            "label": "uint256",
+            "numberOfBytes": "32"
+          },
+          "t_uint64": {
+            "label": "uint64",
+            "numberOfBytes": "8"
+          },
+          "t_array(t_uint256)dyn_storage": {
+            "label": "uint256[]",
+            "numberOfBytes": "32"
+          },
+          "t_contract(IAssetRegistry)4063": {
+            "label": "contract IAssetRegistry",
+            "numberOfBytes": "20"
+          },
+          "t_contract(IProfitPool)4339": {
+            "label": "contract IProfitPool",
+            "numberOfBytes": "20"
+          },
+          "t_contract(ISystemParameters)4431": {
+            "label": "contract ISystemParameters",
+            "numberOfBytes": "20"
+          },
+          "t_enum(InvestmentStatus)4072": {
+            "label": "enum IInvestmentManager.InvestmentStatus",
+            "members": [
+              "Invalid",
+              "Active",
+              "Completed",
+              "Cancelled"
+            ],
+            "numberOfBytes": "1"
+          },
+          "t_mapping(t_address,t_array(t_uint256)dyn_storage)": {
+            "label": "mapping(address => uint256[])",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_address,t_uint256)": {
+            "label": "mapping(address => uint256)",
+            "numberOfBytes": "32"
+          },
+          "t_mapping(t_uint256,t_struct(Investment)4097_storage)": {
+            "label": "mapping(uint256 => struct IInvestmentManager.Investment)",
+            "numberOfBytes": "32"
+          },
+          "t_struct(Investment)4097_storage": {
+            "label": "struct IInvestmentManager.Investment",
+            "members": [
+              {
+                "label": "investmentId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "0"
+              },
+              {
+                "label": "investor",
+                "type": "t_address",
+                "offset": 0,
+                "slot": "1"
+              },
+              {
+                "label": "assetId",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "2"
+              },
+              {
+                "label": "amount",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "3"
+              },
+              {
+                "label": "startTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "4"
+              },
+              {
+                "label": "endTime",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "5"
+              },
+              {
+                "label": "period",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "6"
+              },
+              {
+                "label": "apy",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "7"
+              },
+              {
+                "label": "status",
+                "type": "t_enum(InvestmentStatus)4072",
+                "offset": 0,
+                "slot": "8"
+              },
+              {
+                "label": "profit",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "9"
+              },
+              {
+                "label": "claimedProfit",
+                "type": "t_uint256",
+                "offset": 0,
+                "slot": "10"
+              }
+            ],
+            "numberOfBytes": "352"
           }
         },
         "namespaces": {
