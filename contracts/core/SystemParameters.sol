@@ -37,11 +37,15 @@ contract SystemParameters is
     // Platform weUSD token address
     address private _platformToken;
     
+    // Minimum profit threshold (basis points per day, e.g., 1 = 0.01% daily)
+    uint256 private _minimumProfitThresholdBasisPoints;
+    
     // Event definitions
     event InvestmentCooldownUpdated(uint256 cooldown);
     event ProfitPoolMinBalanceUpdated(uint256 amount);
     event ProfitWithdrawalCooldownUpdated(uint256 cooldown);
     event PlatformTokenUpdated(address token);
+    event MinimumProfitThresholdUpdated(uint256 basisPoints);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -66,6 +70,7 @@ contract SystemParameters is
         _investmentCooldown = 1 days; // 1 day
         _profitPoolMinBalance = 1000 * 10**18; // 1000 weUSD
         _profitWithdrawalCooldown = 1 days; // 1 day
+        _minimumProfitThresholdBasisPoints = 1; // 0.01% daily minimum
     }
     
     /**
@@ -145,6 +150,24 @@ contract SystemParameters is
      */
     function getPlatformToken() external view override returns (address) {
         return _platformToken;
+    }
+    
+    /**
+     * @dev Set minimum profit threshold in basis points per day
+     * @param basisPoints Basis points per day (e.g., 1 = 0.01% daily)
+     */
+    function setMinimumProfitThreshold(uint256 basisPoints) external override onlyAdmin {
+        require(basisPoints <= 1000, "SystemParameters: threshold too high"); // Max 10% daily
+        _minimumProfitThresholdBasisPoints = basisPoints;
+        emit MinimumProfitThresholdUpdated(basisPoints);
+    }
+    
+    /**
+     * @dev Get minimum profit threshold in basis points per day
+     * @return Basis points per day (e.g., 1 = 0.01% daily)
+     */
+    function getMinimumProfitThreshold() external view override returns (uint256) {
+        return _minimumProfitThresholdBasisPoints;
     }
     
 

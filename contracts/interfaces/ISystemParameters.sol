@@ -55,4 +55,16 @@ interface ISystemParameters {
      * @return Platform token address
      */
     function getPlatformToken() external view returns (address);
+    
+    /**
+     * @dev Set minimum profit threshold in basis points per day
+     * @param basisPoints Basis points per day (e.g., 1 = 0.01% daily)
+     */
+    function setMinimumProfitThreshold(uint256 basisPoints) external;
+    
+    /**
+     * @dev Get minimum profit threshold in basis points per day
+     * @return Basis points per day (e.g., 1 = 0.01% daily)
+     */
+    function getMinimumProfitThreshold() external view returns (uint256);
 } 

@@ -81,9 +81,15 @@ async function main() {
   // Note: APY and investment limits are now configured per asset in AssetRegistry
   console.log("SystemParameters simplified - APY and investment limits are now per asset");
   
+  // Set minimum profit threshold for precision loss protection
+  console.log("Setting minimum profit threshold...");
+  await systemParameters.setMinimumProfitThreshold(1); // 0.01% daily minimum
+  await delay(DELAY_TIME);
+  
   // Add parameters to report
   deploymentReport.contracts.systemParameters.parameters = {
-    note: "APY and investment limits are now configured per asset in AssetRegistry"
+    note: "APY and investment limits are now configured per asset in AssetRegistry",
+    minimumProfitThreshold: "1 basis point daily (0.01%)"
   };
   
   // Set investment cooldown - set to 1 minute for testing

@@ -51,6 +51,9 @@ describe("System Integration Tests", function () {
     
     // Note: APY and investment limits are now configured per asset in AssetRegistry
     
+    // Set minimum profit threshold for precision loss protection
+    await systemParameters.setMinimumProfitThreshold(1); // 0.01% daily minimum
+    
     // Set investment cooldown - set to 1 minute for testing
     await systemParameters.setInvestmentCooldown(60);
     
@@ -250,6 +253,37 @@ describe("System Integration Tests", function () {
       
       console.log("Profit calculation verification successful");
     });
+
+    it("should handle small investment amounts with precision loss protection", async function () {
+      const { investmentManager, assetRegistry, weUSD, user1 } = await loadFixture(deployContractsFixture);
+      
+      // Test with a very small investment amount that would normally result in 0 profit
+      const smallAmount = ethers.parseUnits("1", PLATFORM_TOKEN_DECIMALS); // 1 weUSD
+      
+      // Mint tokens for user
+      await weUSD.mint(user1.address, smallAmount);
+      await weUSD.connect(user1).approve(await investmentManager.getAddress(), smallAmount);
+      
+      // Make investment
+      const investmentId = await investmentManager.connect(user1).invest.staticCall(1, smallAmount);
+      await investmentManager.connect(user1).invest(1, smallAmount);
+      
+      // Fast forward time by 1 day
+      await time.increase(24 * 60 * 60); // 1 day
+      
+      // Calculate profit for small investment
+      const profit = await investmentManager.calculateProfit(investmentId);
+      console.log(`Small investment profit: ${ethers.formatUnits(profit, PLATFORM_TOKEN_DECIMALS)} weUSD`);
+      
+      // Even small investments should get some profit due to minimum threshold
+      expect(profit).to.be.gt(0);
+      
+      // Profit should be reasonable (not too large)
+      const maxReasonableProfit = smallAmount / 100n; // Should not exceed 1% of principal
+      expect(profit).to.be.lte(maxReasonableProfit);
+      
+      console.log("Small investment precision loss protection verification successful");
+    });
   });
   
   describe("System Management Tests", function () {
@@ -263,6 +297,24 @@ describe("System Integration Tests", function () {
       expect(updatedMinInvestment).to.equal(newMinInvestment);
       
       console.log("System parameter update successful");
+    });
+
+    it("should allow admin to configure minimum profit threshold", async function () {
+      const { systemParameters, deployer } = await loadFixture(deployContractsFixture);
+      
+      // Test setting minimum profit threshold
+      const newThreshold = 5; // 0.05% daily
+      await systemParameters.connect(deployer).setMinimumProfitThreshold(newThreshold);
+      
+      const updatedThreshold = await systemParameters.getMinimumProfitThreshold();
+      expect(updatedThreshold).to.equal(newThreshold);
+      
+      // Test maximum threshold limit
+      await expect(
+        systemParameters.connect(deployer).setMinimumProfitThreshold(1001) // > 10% daily
+      ).to.be.revertedWith("SystemParameters: threshold too high");
+      
+      console.log("Minimum profit threshold configuration successful");
     });
     
     it("should allow admin to manage assets", async function () {

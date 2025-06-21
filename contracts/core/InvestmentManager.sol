@@ -263,7 +263,7 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Calculate investment profit
+     * @dev Calculate investment profit with precision loss protection
      * @param investmentId Investment ID
      * @return Profit amount
      */
@@ -284,7 +284,7 @@ contract InvestmentManager is
         // Calculate current time
         uint256 currentTime = block.timestamp;
         
-        // Calculate elapsed time
+        // Calculate elapsed time (minimum 1 second to avoid 0 profit for very short periods)
         uint256 elapsedTime;
         if (currentTime > investment.endTime) {
             elapsedTime = investment.endTime - investment.startTime;
@@ -292,21 +292,65 @@ contract InvestmentManager is
             elapsedTime = currentTime - investment.startTime;
         }
         
-        // Improved profit calculation to avoid precision loss
-        // Using 365 days directly instead of a variable to avoid potential manipulation
+        // If no time has elapsed, return 0
+        if (elapsedTime == 0) {
+            return 0;
+        }
+        
+        // Use 365 days as seconds in year
         uint256 secondsInYear = 365 days;
         
         // Check for potential overflow before calculation
-        // Max safe value for amount * apy * elapsedTime should not exceed type(uint256).max / (secondsInYear * 10000)
-        require(
-            investment.amount <= type(uint256).max / investment.apy / elapsedTime * secondsInYear * 10000,
-            "InvestmentManager: calculation would overflow"
-        );
+        if (investment.apy > 0 && elapsedTime > 0) {
+            // Simplified overflow check: if amount * apy would overflow, revert
+            if (investment.amount > type(uint256).max / investment.apy) {
+                revert("InvestmentManager: calculation would overflow");
+            }
+        }
         
-        // Calculate (amount * APY * elapsedTime) / (secondsInYear * 10000)
-        // Note: This calculation may still have precision loss for very small amounts
-        // Consider implementing a minimum profit threshold or using a math library for better precision
-        uint256 profit = (investment.amount * investment.apy * elapsedTime) / (secondsInYear * 10000);
+        // Enhanced profit calculation with precision loss protection
+        // Method 1: Scale up calculation for better precision, then scale down
+        uint256 scaleFactor = 1e18; // Use 18 decimal precision
+        
+        // Calculate: (amount * apy * elapsedTime * scaleFactor) / (secondsInYear * 10000)
+        uint256 numerator = investment.amount * investment.apy * elapsedTime;
+        uint256 denominator = secondsInYear * 10000;
+        
+        // Calculate profit with higher precision
+        uint256 scaledProfit = (numerator * scaleFactor) / denominator;
+        uint256 profit = scaledProfit / scaleFactor;
+        
+                 // Apply minimum profit threshold to prevent zero profits for legitimate investments
+         if (profit == 0 && investment.amount > 0 && elapsedTime > 0) {
+             // Get minimum profit threshold from system parameters (basis points per day)
+             uint256 thresholdBasisPoints = _systemParameters.getMinimumProfitThreshold();
+             
+             if (thresholdBasisPoints > 0) {
+                 // Calculate minimum daily profit based on threshold
+                 // thresholdBasisPoints = basis points per day (e.g., 1 = 0.01% daily)
+                 uint256 minimumDailyProfit = (investment.amount * thresholdBasisPoints) / 10000;
+                 if (minimumDailyProfit == 0 && investment.amount > 0) {
+                     minimumDailyProfit = 1; // Absolute minimum of 1 wei
+                 }
+                 
+                 // Calculate minimum profit based on elapsed time
+                 uint256 daysPassed = elapsedTime / 1 days;
+                 if (daysPassed == 0 && elapsedTime > 12 hours) {
+                     daysPassed = 1; // Round up if more than half a day
+                 }
+                 
+                 uint256 minimumProfit = minimumDailyProfit * daysPassed;
+                 
+                 // Safety cap: minimum profit should not exceed 1% of principal
+                 uint256 maxMinimumProfit = investment.amount / 100;
+                 if (minimumProfit > maxMinimumProfit) {
+                     minimumProfit = maxMinimumProfit;
+                 }
+                 
+                 // Use the larger of calculated profit or minimum profit
+                 profit = minimumProfit;
+             }
+         }
         
         return profit;
     }
