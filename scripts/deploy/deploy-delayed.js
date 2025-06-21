@@ -311,7 +311,7 @@ async function main() {
     
     // Set investment manager as operator for profit pool
     console.log("Granting OPERATOR_ROLE to InvestmentManager in ProfitPool...");
-    await profitPool.grantRole(await profitPool.OPERATOR_ROLE(), await investmentManager.getAddress());
+    await profitPool.grantOperatorRole(await investmentManager.getAddress());
     console.log("Granted OPERATOR_ROLE to InvestmentManager in ProfitPool");
     await delay(DELAY_TIME);
     

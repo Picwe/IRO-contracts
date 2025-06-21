@@ -132,13 +132,15 @@ describe("System Integration Tests", function () {
     await assetRegistry.grantRole(await assetRegistry.OPERATOR_ROLE(), await investmentManager.getAddress());
     
     // Set InvestmentManager as operator for ProfitPool
-    await profitPool.grantRole(await profitPool.OPERATOR_ROLE(), await investmentManager.getAddress());
+    await profitPool.grantOperatorRole(await investmentManager.getAddress());
     
-    // Add some test funds to profit pool
+    // Add some test funds to profit pool for each asset
     console.log("Adding test funds to profit pool...");
     await weUSD.mint(deployer.address, PROFIT_POOL_INITIAL); // Mint 10000 weUSD
     await weUSD.approve(await profitPool.getAddress(), PROFIT_POOL_INITIAL);
-    await profitPool.depositProfit(PROFIT_POOL_INITIAL);
+    const fundPerAsset = PROFIT_POOL_INITIAL / 2n;
+    await profitPool.depositProfitForAsset(1, fundPerAsset);
+    await profitPool.depositProfitForAsset(2, fundPerAsset);
     
     // Give investors some tokens for testing
     const investorBalance = ethers.parseUnits("10000", PLATFORM_TOKEN_DECIMALS); // 10K tokens
@@ -287,16 +289,16 @@ describe("System Integration Tests", function () {
       // Disable an asset
       await assetRegistry.connect(deployer).disableAsset(1);
       
-      // Verify asset is disabled
+      // Verify asset is disabled (status = 0 for Inactive)
       const asset = await assetRegistry.getAsset(1);
-      expect(asset.enabled).to.equal(false);
+      expect(asset.status).to.equal(0); // AssetStatus.Inactive
       
       // Re-enable asset
       await assetRegistry.connect(deployer).enableAsset(1);
       
-      // Verify asset is enabled
+      // Verify asset is enabled (status = 1 for Active)
       const updatedAsset = await assetRegistry.getAsset(1);
-      expect(updatedAsset.enabled).to.equal(true);
+      expect(updatedAsset.status).to.equal(1); // AssetStatus.Active
       
       console.log("Asset management functions verification successful");
     });

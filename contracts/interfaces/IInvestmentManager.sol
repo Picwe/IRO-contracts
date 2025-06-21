@@ -133,17 +133,7 @@ interface IInvestmentManager {
      */
     function removeFromBlacklist(address account) external;
     
-    /**
-     * @dev Add user to whitelist
-     * @param account User address
-     */
-    function addToWhitelist(address account) external;
-    
-    /**
-     * @dev Remove user from whitelist
-     * @param account User address
-     */
-    function removeFromWhitelist(address account) external;
+
     
     /**
      * @dev Pause contract
@@ -176,12 +166,7 @@ interface IInvestmentManager {
      */
     function isBlacklisted(address account) external view returns (bool);
     
-    /**
-     * @dev Check if user is whitelisted
-     * @param account User address
-     * @return Whether user is whitelisted
-     */
-    function isWhitelisted(address account) external view returns (bool);
+
     
     /**
      * @dev Get user investment summary

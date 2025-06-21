@@ -18,6 +18,10 @@ contract SystemParameters is
     UUPSUpgradeable,
     ISystemParameters 
 {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     

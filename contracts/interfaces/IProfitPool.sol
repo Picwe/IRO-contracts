@@ -10,6 +10,12 @@ interface IProfitPool {
     function OPERATOR_ROLE() external view returns (bytes32);
     
     /**
+     * @dev Grant operator role to investment manager
+     * @param investmentManager Investment manager contract address
+     */
+    function grantOperatorRole(address investmentManager) external;
+    
+    /**
      * @dev Get reward token address
      * @return Reward token address
      */

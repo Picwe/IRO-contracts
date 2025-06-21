@@ -88,6 +88,18 @@ interface IAssetRegistry {
     function enableAsset(uint256 assetId) external;
     
     /**
+     * @dev Complete asset (marks asset as fully subscribed or completed)
+     * @param assetId Asset ID
+     */
+    function completeAsset(uint256 assetId) external;
+    
+    /**
+     * @dev Deprecate asset (marks asset as deprecated for removal)
+     * @param assetId Asset ID
+     */
+    function deprecateAsset(uint256 assetId) external;
+    
+    /**
      * @dev Update asset amount
      * @param assetId Asset ID
      * @param amount Amount

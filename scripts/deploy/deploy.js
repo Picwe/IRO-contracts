@@ -242,7 +242,7 @@ async function main() {
   });
   
   // Set investment manager as operator for profit pool
-  await profitPool.grantRole(await profitPool.OPERATOR_ROLE(), await investmentManager.getAddress());
+  await profitPool.grantOperatorRole(await investmentManager.getAddress());
   
   // Add permissions to report
   deploymentReport.permissions.push({
@@ -253,15 +253,17 @@ async function main() {
     granteeAddress: await investmentManager.getAddress()
   });
   
-  // Add some test funds to profit pool
+  // Add some test funds to profit pool for each asset
   console.log("Adding test funds to profit pool...");
   await weUSD.mint(deployer.address, ethers.parseEther("10000")); // Mint 10000 weUSD
   await weUSD.approve(await profitPool.getAddress(), ethers.parseEther("10000"));
-  await profitPool.depositProfit(ethers.parseEther("10000"));
+  // Deposit funds for each asset (asset 1 and asset 2)
+  await profitPool.depositProfitForAsset(1, ethers.parseEther("5000"));
+  await profitPool.depositProfitForAsset(2, ethers.parseEther("5000"));
   
   // Add test funds to report
   deploymentReport.contracts.profitPool.testFunds = {
-    amount: "10,000 weUSD",
+    amount: "10,000 weUSD (5,000 for each asset)",
     from: deployer.address
   };
   

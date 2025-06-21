@@ -26,6 +26,11 @@ contract ProfitPool is
 {
     using SafeERC20 for IERC20;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant override OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
@@ -74,7 +79,7 @@ contract ProfitPool is
         // Set roles
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
-        _grantRole(OPERATOR_ROLE, admin);
+        // Note: OPERATOR_ROLE will be granted to InvestmentManager contract after deployment
         
         // Set system parameters contract
         _systemParameters = ISystemParameters(systemParameters);
@@ -115,6 +120,15 @@ contract ProfitPool is
         return _systemParameters.getPlatformToken();
     }
     
+    /**
+     * @dev Grant operator role to investment manager
+     * @param investmentManager Investment manager contract address
+     */
+    function grantOperatorRole(address investmentManager) external onlyAdmin {
+        require(investmentManager != address(0), "ProfitPool: investmentManager cannot be zero address");
+        _grantRole(OPERATOR_ROLE, investmentManager);
+    }
+
     /**
      * @dev Ensures withdrawal cooldown period has passed
      */

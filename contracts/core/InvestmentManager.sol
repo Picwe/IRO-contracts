@@ -27,6 +27,11 @@ contract InvestmentManager is
 {
     using SafeERC20 for IERC20;
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
+
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     
@@ -52,9 +57,6 @@ contract InvestmentManager is
     // Blacklist mapping
     mapping(address => bool) private _blacklist;
     
-    // Whitelist mapping
-    mapping(address => bool) private _whitelist;
-    
     // Event definitions
     event InvestmentCreated(
         uint256 indexed investmentId,
@@ -79,8 +81,6 @@ contract InvestmentManager is
     );
     
     event BlacklistUpdated(address indexed account, bool status);
-    
-    event WhitelistUpdated(address indexed account, bool status);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -348,12 +348,14 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Transfer profit from asset-specific profit pool to user
+        // Transfer profit from asset-specific profit pool to this contract first
         if (profit > 0) {
             _profitPool.withdrawProfitFromAsset(
                 investment.assetId, 
                 profit
             );
+            // Then transfer profit to the actual investor
+            IERC20(getInvestmentToken()).safeTransfer(investment.investor, profit);
         }
         
         // Return principal to user using platform token
@@ -427,33 +429,7 @@ contract InvestmentManager is
         emit BlacklistUpdated(account, false);
     }
     
-    /**
-     * @dev Add user to whitelist
-     * @param account User address
-     */
-    function addToWhitelist(address account) 
-        external 
-        override 
-        onlyAdmin 
-    {
-        require(!_whitelist[account], "InvestmentManager: account already whitelisted");
-        _whitelist[account] = true;
-        emit WhitelistUpdated(account, true);
-    }
-    
-    /**
-     * @dev Remove user from whitelist
-     * @param account User address
-     */
-    function removeFromWhitelist(address account) 
-        external 
-        override 
-        onlyAdmin 
-    {
-        require(_whitelist[account], "InvestmentManager: account not whitelisted");
-        _whitelist[account] = false;
-        emit WhitelistUpdated(account, false);
-    }
+
     
     /**
      * @dev Check if user is blacklisted
@@ -469,19 +445,7 @@ contract InvestmentManager is
         return _blacklist[account];
     }
     
-    /**
-     * @dev Check if user is whitelisted
-     * @param account User address
-     * @return Whether user is whitelisted
-     */
-    function isWhitelisted(address account) 
-        external 
-        view 
-        override 
-        returns (bool) 
-    {
-        return _whitelist[account];
-    }
+
     
     /**
      * @dev Pause contract

@@ -19,6 +19,10 @@ contract AssetRegistry is
     UUPSUpgradeable,
     IAssetRegistry 
 {
+    /// @custom:oz-upgrades-unsafe-allow constructor
+    constructor() {
+        _disableInitializers();
+    }
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant override OPERATOR_ROLE = keccak256("OPERATOR_ROLE");
@@ -137,7 +141,7 @@ contract AssetRegistry is
         require(apy > 0, "AssetRegistry: apy must be greater than 0");
         require(period > 0, "AssetRegistry: period must be greater than 0");
         require(minInvestment > 0, "AssetRegistry: minInvestment must be greater than 0");
-        require(maxInvestment >= minInvestment, "AssetRegistry: maxInvestment must be >= minInvestment");
+        require(maxInvestment > minInvestment, "AssetRegistry: maxInvestment must be > minInvestment");
         require(maxAmount >= maxInvestment, "AssetRegistry: maxAmount must be >= maxInvestment");
         
         uint256 assetId = _nextAssetId++;
@@ -190,6 +194,30 @@ contract AssetRegistry is
         require(_assets[assetId].status == AssetStatus.Inactive, "AssetRegistry: asset is not inactive");
         _assets[assetId].status = AssetStatus.Active;
         emit AssetStatusUpdated(assetId, AssetStatus.Active);
+    }
+    
+    /**
+     * @dev Complete asset (marks asset as fully subscribed or completed)
+     * @param assetId Asset ID
+     */
+    function completeAsset(uint256 assetId) external override onlyAdmin assetMustExist(assetId) {
+        require(_assets[assetId].status == AssetStatus.Active, "AssetRegistry: asset is not active");
+        _assets[assetId].status = AssetStatus.Completed;
+        emit AssetStatusUpdated(assetId, AssetStatus.Completed);
+    }
+    
+    /**
+     * @dev Deprecate asset (marks asset as deprecated for removal)
+     * @param assetId Asset ID
+     */
+    function deprecateAsset(uint256 assetId) external override onlyAdmin assetMustExist(assetId) {
+        require(
+            _assets[assetId].status == AssetStatus.Inactive || 
+            _assets[assetId].status == AssetStatus.Completed, 
+            "AssetRegistry: asset must be inactive or completed to deprecate"
+        );
+        _assets[assetId].status = AssetStatus.Deprecated;
+        emit AssetStatusUpdated(assetId, AssetStatus.Deprecated);
     }
     
     /**
@@ -258,7 +286,7 @@ contract AssetRegistry is
     ) external view override assetMustExist(assetId) returns (bool) {
         Asset storage asset = _assets[assetId];
         
-        // Check if asset is active
+        // Check if asset is active (only active assets can receive new investments)
         if (asset.status != AssetStatus.Active) {
             return false;
         }
