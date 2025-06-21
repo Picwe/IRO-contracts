@@ -49,17 +49,7 @@ describe("System Integration Tests", function () {
     const threeMonths = 3 * oneMonth; // 3 months
     const sixMonths = 6 * oneMonth; // 6 months
     
-    // Set APY for different periods
-    await systemParameters.setPeriodAPY(oneDay, 500); // 5% APY
-    await systemParameters.setPeriodAPY(oneWeek, 1000); // 10% APY
-    await systemParameters.setPeriodAPY(twoWeeks, 1500); // 15% APY
-    await systemParameters.setPeriodAPY(oneMonth, 2000); // 20% APY
-    await systemParameters.setPeriodAPY(threeMonths, 2500); // 25% APY
-    await systemParameters.setPeriodAPY(sixMonths, 3000); // 30% APY
-    
-    // Set investment limits
-    await systemParameters.setMinInvestmentAmount(ethers.parseUnits("10", PLATFORM_TOKEN_DECIMALS)); // Minimum investment 10 weUSD
-    await systemParameters.setMaxInvestmentAmount(ethers.parseUnits("100000000", PLATFORM_TOKEN_DECIMALS)); // Maximum investment 100M weUSD
+    // Note: APY and investment limits are now configured per asset in AssetRegistry
     
     // Set investment cooldown - set to 1 minute for testing
     await systemParameters.setInvestmentCooldown(60);
@@ -178,15 +168,7 @@ describe("System Integration Tests", function () {
       const platformToken = await systemParameters.getPlatformToken();
       expect(platformToken).to.equal(await weUSD.getAddress());
       
-      // Verify APY settings
-      const oneMonthAPY = await systemParameters.getPeriodAPY(30 * 24 * 60 * 60);
-      expect(oneMonthAPY).to.equal(2000); // 20%
-      
-      // Verify investment limits
-      const minInvestment = await systemParameters.getMinInvestmentAmount();
-      const maxInvestment = await systemParameters.getMaxInvestmentAmount();
-      expect(minInvestment).to.equal(ethers.parseUnits("10", PLATFORM_TOKEN_DECIMALS));
-      expect(maxInvestment).to.equal(ethers.parseUnits("100000000", PLATFORM_TOKEN_DECIMALS));
+      // Note: APY and investment limits verification now happens in AssetRegistry tests
       
       console.log("System parameters verification successful");
     });

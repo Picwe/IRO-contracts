@@ -292,10 +292,20 @@ contract InvestmentManager is
             elapsedTime = currentTime - investment.startTime;
         }
         
-        // Calculate profit using APY/10000 as the percentage
+        // Improved profit calculation to avoid precision loss
+        // Using 365 days directly instead of a variable to avoid potential manipulation
         uint256 secondsInYear = 365 days;
         
+        // Check for potential overflow before calculation
+        // Max safe value for amount * apy * elapsedTime should not exceed type(uint256).max / (secondsInYear * 10000)
+        require(
+            investment.amount <= type(uint256).max / investment.apy / elapsedTime * secondsInYear * 10000,
+            "InvestmentManager: calculation would overflow"
+        );
+        
         // Calculate (amount * APY * elapsedTime) / (secondsInYear * 10000)
+        // Note: This calculation may still have precision loss for very small amounts
+        // Consider implementing a minimum profit threshold or using a math library for better precision
         uint256 profit = (investment.amount * investment.apy * elapsedTime) / (secondsInYear * 10000);
         
         return profit;

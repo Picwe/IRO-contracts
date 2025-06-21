@@ -53,12 +53,18 @@ contract ProfitPool is
     // Asset-specific profit pool balances
     mapping(uint256 => uint256) private _assetProfitPools;
     
+    // Emergency withdrawal timelock
+    uint256 private constant EMERGENCY_TIMELOCK = 24 hours;
+    mapping(bytes32 => uint256) private _emergencyWithdrawalRequests;
+    
     // Event definitions
     event ProfitDeposited(address indexed depositor, uint256 amount);
     event ProfitDepositedForAsset(address indexed depositor, uint256 indexed assetId, uint256 amount);
     event ProfitWithdrawn(address indexed recipient, uint256 amount);
     event ProfitWithdrawnFromAsset(address indexed recipient, uint256 indexed assetId, uint256 amount);
     event EmergencyWithdrawal(address indexed recipient, uint256 amount);
+    event EmergencyWithdrawalRequested(address indexed recipient, uint256 amount, bytes32 indexed requestId, uint256 executeAfter);
+    event EmergencyWithdrawalExecuted(address indexed recipient, uint256 amount, bytes32 indexed requestId);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -279,7 +285,57 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Emergency withdrawal of all profits
+     * @dev Request emergency withdrawal (with timelock for security)
+     * @param recipient Recipient address
+     */
+    function requestEmergencyWithdraw(address recipient) 
+        external 
+        onlyAdmin 
+    {
+        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
+        
+        uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
+        require(balance > 0, "ProfitPool: no balance to withdraw");
+        
+        bytes32 requestId = keccak256(abi.encodePacked(recipient, balance, block.timestamp));
+        uint256 executeAfter = block.timestamp + EMERGENCY_TIMELOCK;
+        
+        _emergencyWithdrawalRequests[requestId] = executeAfter;
+        
+        emit EmergencyWithdrawalRequested(recipient, balance, requestId, executeAfter);
+    }
+
+    /**
+     * @dev Execute emergency withdrawal (after timelock expires)
+     * @param recipient Recipient address
+     * @param requestId Request ID from the request transaction
+     */
+    function executeEmergencyWithdraw(address recipient, bytes32 requestId) 
+        external 
+        nonReentrant 
+        onlyAdmin 
+    {
+        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
+        require(_emergencyWithdrawalRequests[requestId] != 0, "ProfitPool: invalid request ID");
+        require(block.timestamp >= _emergencyWithdrawalRequests[requestId], "ProfitPool: timelock not expired");
+        
+        uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
+        require(balance > 0, "ProfitPool: no balance to withdraw");
+        
+        // Clear the request
+        delete _emergencyWithdrawalRequests[requestId];
+        
+        // Update statistics
+        _totalWithdrawn += balance;
+        
+        // Transfer all tokens to recipient
+        IERC20(_systemParameters.getPlatformToken()).safeTransfer(recipient, balance);
+        
+        emit EmergencyWithdrawalExecuted(recipient, balance, requestId);
+    }
+
+    /**
+     * @dev Emergency withdrawal of all profits (DEPRECATED - use requestEmergencyWithdraw instead)
      * @param recipient Recipient address
      */
     function emergencyWithdraw(address recipient) 
@@ -288,18 +344,9 @@ contract ProfitPool is
         nonReentrant 
         onlyAdmin 
     {
-        require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
-        
-        uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
-        require(balance > 0, "ProfitPool: no balance to withdraw");
-        
-        // Update statistics
-        _totalWithdrawn += balance;
-        
-        // Transfer all tokens to recipient
-        IERC20(_systemParameters.getPlatformToken()).safeTransfer(recipient, balance);
-        
-        emit EmergencyWithdrawal(recipient, balance);
+        // SECURITY: This method is now deprecated due to security concerns
+        // All emergency withdrawals must go through the timelock mechanism
+        revert("ProfitPool: use requestEmergencyWithdraw and executeEmergencyWithdraw instead");
     }
     
     /**

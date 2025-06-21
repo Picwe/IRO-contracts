@@ -48,7 +48,20 @@ interface IProfitPool {
     function withdrawProfit(uint256 amount) external;
     
     /**
-     * @dev Emergency withdraw
+     * @dev Request emergency withdrawal (with timelock)
+     * @param recipient Recipient address
+     */
+    function requestEmergencyWithdraw(address recipient) external;
+    
+    /**
+     * @dev Execute emergency withdrawal (after timelock)
+     * @param recipient Recipient address
+     * @param requestId Request ID from the request transaction
+     */
+    function executeEmergencyWithdraw(address recipient, bytes32 requestId) external;
+    
+    /**
+     * @dev Emergency withdraw (DEPRECATED)
      * @param recipient Recipient address
      */
     function emergencyWithdraw(address recipient) external;

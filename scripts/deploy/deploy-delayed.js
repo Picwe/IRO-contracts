@@ -78,56 +78,12 @@ async function main() {
   const threeMonths = 3 * oneMonth; // 3 months
   const sixMonths = 6 * oneMonth; // 6 months
   
-  // Set APY for different periods - 为每个交易添加延时
-  console.log("Setting APY for oneDay...");
-  await systemParameters.setPeriodAPY(oneDay, ethers.parseEther("0.05")); // 5% APY
-  await delay(DELAY_TIME);
-  
-  console.log("Setting APY for oneWeek...");
-  await systemParameters.setPeriodAPY(oneWeek, ethers.parseEther("0.10")); // 10% APY
-  await delay(DELAY_TIME);
-  
-  console.log("Setting APY for twoWeeks...");
-  await systemParameters.setPeriodAPY(twoWeeks, ethers.parseEther("0.15")); // 15% APY
-  await delay(DELAY_TIME);
-  
-  console.log("Setting APY for oneMonth...");
-  await systemParameters.setPeriodAPY(oneMonth, ethers.parseEther("0.20")); // 20% APY
-  await delay(DELAY_TIME);
-  
-  console.log("Setting APY for threeMonths...");
-  await systemParameters.setPeriodAPY(threeMonths, ethers.parseEther("0.25")); // 25% APY
-  await delay(DELAY_TIME);
-  
-  console.log("Setting APY for sixMonths...");
-  await systemParameters.setPeriodAPY(sixMonths, ethers.parseEther("0.30")); // 30% APY
-  await delay(DELAY_TIME);
+  // Note: APY and investment limits are now configured per asset in AssetRegistry
+  console.log("SystemParameters simplified - APY and investment limits are now per asset");
   
   // Add parameters to report
   deploymentReport.contracts.systemParameters.parameters = {
-    periodAPY: {
-      [oneDay]: "5%",
-      [oneWeek]: "10%",
-      [twoWeeks]: "15%",
-      [oneMonth]: "20%",
-      [threeMonths]: "25%",
-      [sixMonths]: "30%"
-    }
-  };
-  
-  // Set investment limits
-  console.log("Setting min investment amount...");
-  await systemParameters.setMinInvestmentAmount(ethers.parseEther("10")); // Minimum investment 10 weUSD
-  await delay(DELAY_TIME);
-  
-  console.log("Setting max investment amount...");
-  await systemParameters.setMaxInvestmentAmount(ethers.parseEther("100000000")); // Maximum investment 100M weUSD
-  await delay(DELAY_TIME);
-  
-  // Add investment limits to report
-  deploymentReport.contracts.systemParameters.parameters.investmentLimits = {
-    min: "10 weUSD",
-    max: "100,000,000 weUSD"
+    note: "APY and investment limits are now configured per asset in AssetRegistry"
   };
   
   // Set investment cooldown - set to 1 minute for testing

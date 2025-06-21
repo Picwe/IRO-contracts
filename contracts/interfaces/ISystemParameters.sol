@@ -6,43 +6,7 @@ pragma solidity ^0.8.25;
  * @dev System parameters contract interface
  */
 interface ISystemParameters {
-    /**
-     * @dev Set APY for a period
-     * @param period Period (in seconds)
-     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
-     */
-    function setPeriodAPY(uint256 period, uint256 apy) external;
-    
-    /**
-     * @dev Get APY for a period
-     * @param period Period (in seconds)
-     * @return Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
-     */
-    function getPeriodAPY(uint256 period) external view returns (uint256);
-    
-    /**
-     * @dev Set minimum investment amount
-     * @param amount Minimum investment amount
-     */
-    function setMinInvestmentAmount(uint256 amount) external;
-    
-    /**
-     * @dev Get minimum investment amount
-     * @return Minimum investment amount
-     */
-    function getMinInvestmentAmount() external view returns (uint256);
-    
-    /**
-     * @dev Set maximum investment amount
-     * @param amount Maximum investment amount
-     */
-    function setMaxInvestmentAmount(uint256 amount) external;
-    
-    /**
-     * @dev Get maximum investment amount
-     * @return Maximum investment amount
-     */
-    function getMaxInvestmentAmount() external view returns (uint256);
+
     
     /**
      * @dev Set investment cooldown period

@@ -25,12 +25,6 @@ contract SystemParameters is
     // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     
-    // Minimum investment amount
-    uint256 private _minInvestmentAmount;
-    
-    // Maximum investment amount
-    uint256 private _maxInvestmentAmount;
-    
     // Investment cooldown (in seconds)
     uint256 private _investmentCooldown;
     
@@ -43,17 +37,11 @@ contract SystemParameters is
     // Platform weUSD token address
     address private _platformToken;
     
-    // Period APY mapping (period => APY)
-    mapping(uint256 => uint256) private _periodAPY;
-    
     // Event definitions
-    event MinInvestmentAmountUpdated(uint256 amount);
-    event MaxInvestmentAmountUpdated(uint256 amount);
     event InvestmentCooldownUpdated(uint256 cooldown);
     event ProfitPoolMinBalanceUpdated(uint256 amount);
     event ProfitWithdrawalCooldownUpdated(uint256 cooldown);
     event PlatformTokenUpdated(address token);
-    event PeriodAPYUpdated(uint256 period, uint256 apy);
     
     /**
      * @dev Initialization function, replaces constructor
@@ -75,8 +63,6 @@ contract SystemParameters is
         _platformToken = platformToken;
         
         // Set default parameters
-        _minInvestmentAmount = 10 * 10**18; // 10 weUSD
-        _maxInvestmentAmount = 100_000_000 * 10**18; // 100 million weUSD
         _investmentCooldown = 1 days; // 1 day
         _profitPoolMinBalance = 1000 * 10**18; // 1000 weUSD
         _profitWithdrawalCooldown = 1 days; // 1 day
@@ -90,42 +76,7 @@ contract SystemParameters is
         _;
     }
     
-    /**
-     * @dev Set minimum investment amount
-     * @param amount Minimum investment amount
-     */
-    function setMinInvestmentAmount(uint256 amount) external override onlyAdmin {
-        require(amount > 0, "SystemParameters: amount must be greater than 0");
-        require(amount < _maxInvestmentAmount, "SystemParameters: amount must be less than max investment amount");
-        _minInvestmentAmount = amount;
-        emit MinInvestmentAmountUpdated(amount);
-    }
-    
-    /**
-     * @dev Get minimum investment amount
-     * @return Minimum investment amount
-     */
-    function getMinInvestmentAmount() external view override returns (uint256) {
-        return _minInvestmentAmount;
-    }
-    
-    /**
-     * @dev Set maximum investment amount
-     * @param amount Maximum investment amount
-     */
-    function setMaxInvestmentAmount(uint256 amount) external override onlyAdmin {
-        require(amount > _minInvestmentAmount, "SystemParameters: amount must be greater than min investment amount");
-        _maxInvestmentAmount = amount;
-        emit MaxInvestmentAmountUpdated(amount);
-    }
-    
-    /**
-     * @dev Get maximum investment amount
-     * @return Maximum investment amount
-     */
-    function getMaxInvestmentAmount() external view override returns (uint256) {
-        return _maxInvestmentAmount;
-    }
+
     
     /**
      * @dev Set investment cooldown
@@ -196,29 +147,7 @@ contract SystemParameters is
         return _platformToken;
     }
     
-    /**
-     * @dev Set APY for a period
-     * @param period Period (in seconds)
-     * @param apy Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
-     */
-    function setPeriodAPY(uint256 period, uint256 apy) external override onlyAdmin {
-        require(period > 0, "SystemParameters: period must be greater than 0");
-        require(apy > 0, "SystemParameters: apy must be greater than 0");
-        _periodAPY[period] = apy;
-        emit PeriodAPYUpdated(period, apy);
-    }
-    
-    /**
-     * @dev Get APY for a period
-     * @param period Period (in seconds)
-     * @return Annual percentage yield (based on 10000: e.g., 1000 = 10%, 10000 = 100%)
-     */
-    function getPeriodAPY(uint256 period) external view override returns (uint256) {
-        require(period > 0, "SystemParameters: period must be greater than 0");
-        uint256 apy = _periodAPY[period];
-        require(apy > 0, "SystemParameters: no APY set for this period");
-        return apy;
-    }
+
     
     /**
      * @dev Execute upgrade authorization check
