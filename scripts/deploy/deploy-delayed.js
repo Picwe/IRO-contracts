@@ -136,7 +136,7 @@ async function main() {
       "Test Inc.", 
       "This is a test bond asset", 
       ethers.parseEther("1000000"), // 1M weUSD max amount
-      ethers.parseEther("0.10"), // 10% APY
+      1000, // 10% APY (1000 out of 10000)
       ethers.parseEther("100"), // 100 weUSD min investment
       ethers.parseEther("10000"), // 10K weUSD max investment per user
       oneMonth // 1 month period
@@ -152,7 +152,7 @@ async function main() {
       "Test Corp.", 
       "This is another test bond asset", 
       ethers.parseEther("2000000"), // 2M weUSD max amount
-      ethers.parseEther("0.15"), // 15% APY
+      1500, // 15% APY (1500 out of 10000)
       ethers.parseEther("500"), // 500 weUSD min investment
       ethers.parseEther("20000"), // 20K weUSD max investment per user
       threeMonths // 3 months period
