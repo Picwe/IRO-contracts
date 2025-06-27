@@ -273,32 +273,6 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Withdraw profit (for direct user access)
-     * @param amount Profit amount
-     */
-    function withdrawProfit(uint256 amount) 
-        external 
-        override 
-        whenNotPaused 
-        nonReentrant 
-        withdrawalCooldownPassed 
-        sufficientBalance(amount)
-    {
-        require(amount > 0, "ProfitPool: amount must be greater than 0");
-        
-        // Update statistics
-        _totalWithdrawn += amount;
-        
-        // Update last withdrawal time
-        _lastWithdrawalTime[msg.sender] = block.timestamp;
-        
-        // Transfer reward tokens to msg.sender
-        IERC20(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
-        
-        emit ProfitWithdrawn(msg.sender, amount);
-    }
-    
-    /**
      * @dev Request emergency withdrawal (with timelock for security)
      * @param recipient Recipient address
      */

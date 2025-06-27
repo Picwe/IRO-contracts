@@ -43,10 +43,10 @@ interface IProfitPool {
     function withdrawProfitFromAsset(uint256 assetId, uint256 amount, address user) external;
     
     /**
-     * @dev Withdraw profit
+     * @dev Withdraw profit (for direct user access)
      * @param amount Profit amount
      */
-    function withdrawProfit(uint256 amount) external;
+    // function withdrawProfit(uint256 amount) external;
     
     /**
      * @dev Request emergency withdrawal (with timelock)
