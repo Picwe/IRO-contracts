@@ -38,8 +38,9 @@ interface IProfitPool {
      * @dev Withdraw profit from a specific asset's profit pool
      * @param assetId Asset ID
      * @param amount Profit amount
+     * @param user User address for whom the withdrawal is being made
      */
-    function withdrawProfitFromAsset(uint256 assetId, uint256 amount) external;
+    function withdrawProfitFromAsset(uint256 assetId, uint256 amount, address user) external;
     
     /**
      * @dev Withdraw profit

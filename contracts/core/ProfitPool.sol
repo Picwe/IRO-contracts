@@ -55,7 +55,15 @@ contract ProfitPool is
     
     // Emergency withdrawal timelock
     uint256 private constant EMERGENCY_TIMELOCK = 24 hours;
-    mapping(bytes32 => uint256) private _emergencyWithdrawalRequests;
+    
+    // Struct to store emergency withdrawal request details - Fix PPO-2
+    struct EmergencyWithdrawalRequest {
+        address recipient;
+        uint256 amount;
+        uint256 executeAfter;
+    }
+    
+    mapping(bytes32 => EmergencyWithdrawalRequest) private _emergencyWithdrawalRequests;
     
     // Event definitions
     event ProfitDeposited(address indexed depositor, uint256 amount);
@@ -82,10 +90,14 @@ contract ProfitPool is
         __ReentrancyGuard_init();
         __UUPSUpgradeable_init();
         
-        // Set roles
+        // Set roles - Fix PPO-1: Correct role permission configuration
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
-        // Note: OPERATOR_ROLE will be granted to InvestmentManager contract after deployment
+        
+        // Fix PPO-1: Set ADMIN_ROLE as admin of OPERATOR_ROLE 
+        // This ensures grantOperatorRole function (which uses onlyAdmin) can properly manage OPERATOR_ROLE
+        // Without this, there's a mismatch: grantOperatorRole checks ADMIN_ROLE but OPERATOR_ROLE is managed by DEFAULT_ADMIN_ROLE
+        _setRoleAdmin(OPERATOR_ROLE, ADMIN_ROLE);
         
         // Set system parameters contract
         _systemParameters = ISystemParameters(systemParameters);
@@ -227,10 +239,12 @@ contract ProfitPool is
      * @dev Withdraw profit from asset-specific profit pool
      * @param assetId Asset ID
      * @param amount Profit amount
+     * @param user User address for whom the withdrawal is being made
      */
     function withdrawProfitFromAsset(
         uint256 assetId, 
-        uint256 amount
+        uint256 amount,
+        address user
     ) 
         external 
         override 
@@ -241,6 +255,7 @@ contract ProfitPool is
         sufficientAssetBalance(assetId, amount)
     {
         require(amount > 0, "ProfitPool: amount must be greater than 0");
+        require(user != address(0), "ProfitPool: user cannot be zero address");
         
         // Update asset profit pool balance
         _assetProfitPools[assetId] -= amount;
@@ -248,13 +263,13 @@ contract ProfitPool is
         // Update statistics
         _totalWithdrawn += amount;
         
-        // Update last withdrawal time
-        _lastWithdrawalTime[msg.sender] = block.timestamp;
+        // Fix PPO-3: Update last withdrawal time for the actual user, not the contract
+        _lastWithdrawalTime[user] = block.timestamp;
         
-        // Transfer reward tokens to msg.sender
-        IERC20(_systemParameters.getPlatformToken()).safeTransfer(msg.sender, amount);
+        // Transfer reward tokens to the user
+        IERC20(_systemParameters.getPlatformToken()).safeTransfer(user, amount);
         
-        emit ProfitWithdrawnFromAsset(msg.sender, assetId, amount);
+        emit ProfitWithdrawnFromAsset(user, assetId, amount);
     }
     
     /**
@@ -300,7 +315,12 @@ contract ProfitPool is
         bytes32 requestId = keccak256(abi.encodePacked(recipient, balance, block.timestamp));
         uint256 executeAfter = block.timestamp + EMERGENCY_TIMELOCK;
         
-        _emergencyWithdrawalRequests[requestId] = executeAfter;
+        // Fix PPO-2: Store complete request details including original recipient
+        _emergencyWithdrawalRequests[requestId] = EmergencyWithdrawalRequest({
+            recipient: recipient,
+            amount: balance,
+            executeAfter: executeAfter
+        });
         
         emit EmergencyWithdrawalRequested(recipient, balance, requestId, executeAfter);
     }
@@ -316,8 +336,13 @@ contract ProfitPool is
         onlyAdmin 
     {
         require(recipient != address(0), "ProfitPool: recipient cannot be zero address");
-        require(_emergencyWithdrawalRequests[requestId] != 0, "ProfitPool: invalid request ID");
-        require(block.timestamp >= _emergencyWithdrawalRequests[requestId], "ProfitPool: timelock not expired");
+        
+        EmergencyWithdrawalRequest memory request = _emergencyWithdrawalRequests[requestId];
+        require(request.executeAfter != 0, "ProfitPool: invalid request ID");
+        require(block.timestamp >= request.executeAfter, "ProfitPool: timelock not expired");
+        
+        // Fix PPO-2: Validate recipient consistency between request and execution
+        require(recipient == request.recipient, "ProfitPool: recipient mismatch with original request");
         
         uint256 balance = IERC20(_systemParameters.getPlatformToken()).balanceOf(address(this));
         require(balance > 0, "ProfitPool: no balance to withdraw");

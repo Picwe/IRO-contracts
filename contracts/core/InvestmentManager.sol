@@ -402,14 +402,15 @@ contract InvestmentManager is
         // Update asset balance
         _assetRegistry.updateAssetAmount(investment.assetId, investment.amount, true);
         
-        // Transfer profit from asset-specific profit pool to this contract first
+        // Transfer profit from asset-specific profit pool directly to investor
         if (profit > 0) {
             _profitPool.withdrawProfitFromAsset(
                 investment.assetId, 
-                profit
+                profit,
+                investment.investor
             );
-            // Then transfer profit to the actual investor
-            IERC20(getInvestmentToken()).safeTransfer(investment.investor, profit);
+            // Note: withdrawProfitFromAsset already transfers profit directly to investor
+            // No need for additional transfer here
         }
         
         // Return principal to user using platform token
