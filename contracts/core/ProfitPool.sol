@@ -273,7 +273,7 @@ contract ProfitPool is
     }
     
     /**
-     * @dev Withdraw profit
+     * @dev Withdraw profit (for direct user access)
      * @param amount Profit amount
      */
     function withdrawProfit(uint256 amount) 
@@ -281,7 +281,6 @@ contract ProfitPool is
         override 
         whenNotPaused 
         nonReentrant 
-        onlyOperator 
         withdrawalCooldownPassed 
         sufficientBalance(amount)
     {

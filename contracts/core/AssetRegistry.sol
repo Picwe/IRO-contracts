@@ -80,7 +80,8 @@ contract AssetRegistry is
         // Set roles
         _grantRole(DEFAULT_ADMIN_ROLE, admin);
         _grantRole(ADMIN_ROLE, admin);
-        _grantRole(OPERATOR_ROLE, admin);
+        // Note: OPERATOR_ROLE will be granted to InvestmentManager via deployment script
+        // This ensures proper separation of concerns: admin manages assets, operator updates investment amounts
         
         // Set system parameters contract
         _systemParameters = ISystemParameters(systemParameters);
