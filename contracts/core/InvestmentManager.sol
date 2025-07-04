@@ -178,12 +178,13 @@ contract InvestmentManager is
     }
     
     /**
-     * @dev Ensures redemption cooldown period has passed
+     * @dev Ensures redemption cooldown period has passed for the investment owner
      */
-    modifier redemptionCooldownPassed() {
+    modifier redemptionCooldownPassed(uint256 investmentId) {
         uint256 cooldown = _systemParameters.getInvestmentCooldown();
+        address investmentOwner = _investments[investmentId].investor;
         require(
-            block.timestamp - _lastRedemptionTime[msg.sender] >= cooldown,
+            block.timestamp - _lastRedemptionTime[investmentOwner] >= cooldown,
             "InvestmentManager: redemption cooldown not passed"
         );
         _;
@@ -308,17 +309,13 @@ contract InvestmentManager is
             }
         }
         
-        // Enhanced profit calculation with precision loss protection
-        // Method 1: Scale up calculation for better precision, then scale down
-        uint256 scaleFactor = 1e18; // Use 18 decimal precision
-        
-        // Calculate: (amount * apy * elapsedTime * scaleFactor) / (secondsInYear * 10000)
+        // Enhanced profit calculation with proper precision handling
+        // Calculate: (amount * apy * elapsedTime) / (secondsInYear * 10000)
         uint256 numerator = investment.amount * investment.apy * elapsedTime;
         uint256 denominator = secondsInYear * 10000;
         
-        // Calculate profit with higher precision
-        uint256 scaledProfit = (numerator * scaleFactor) / denominator;
-        uint256 profit = scaledProfit / scaleFactor;
+        // Calculate profit directly to avoid double division precision loss
+        uint256 profit = numerator / denominator;
         
                  // Apply minimum profit threshold to prevent zero profits for legitimate investments
          if (profit == 0 && investment.amount > 0 && elapsedTime > 0) {
@@ -368,7 +365,7 @@ contract InvestmentManager is
         investmentExists(investmentId) 
         onlyInvestmentOwner(investmentId)
         notBlacklisted
-        redemptionCooldownPassed
+        redemptionCooldownPassed(investmentId)
         returns (uint256) 
     {
         Investment storage investment = _investments[investmentId];
@@ -417,7 +414,7 @@ contract InvestmentManager is
         IERC20(getInvestmentToken()).safeTransfer(investment.investor, investment.amount);
         
         // Update last redemption time
-        _lastRedemptionTime[msg.sender] = block.timestamp;
+        _lastRedemptionTime[investment.investor] = block.timestamp;
         
         emit ProfitClaimed(investmentId, investment.investor, profit);
         emit InvestmentStatusUpdated(investmentId, InvestmentStatus.Completed);

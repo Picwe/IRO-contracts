@@ -297,7 +297,8 @@ contract AssetRegistry is
             return false;
         }
         
-        // Check if capacity is available
+        // Check if capacity is available (consistent with updateAssetAmount logic)
+        // Should allow investments that don't exceed maxAmount (currentAmount + amount <= maxAmount)
         if (asset.currentAmount + amount > asset.maxAmount) {
             return false;
         }
