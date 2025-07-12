@@ -11,7 +11,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title PoolManager
- * @dev 合并的投资和赎回资金池合约。内部管理两个池子余额，只需加减状态，无需转移代币。
+ * @dev Combined investment and redemption pool contract. Internally manages two pool balances, only updating state without actual token transfers for internal moves.
  */
 contract PoolManager is 
     Initializable, 
@@ -27,20 +27,20 @@ contract PoolManager is
         _disableInitializers();
     }
 
-    // 角色定义
+    // Role definitions
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
-    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE"); // 用于 InvestmentManager
+    bytes32 public constant OPERATOR_ROLE = keccak256("OPERATOR_ROLE"); // For InvestmentManager
 
-    // 平台代币地址 (weUSD)
+    // Platform token address (weUSD)
     address public weUSD;
 
-    // 投资池余额：支持多个代币
+    // Investment pool balances: supports multiple tokens
     mapping(address => uint256) public investmentBalances;
 
-    // 赎回池余额：只支持 weUSD
+    // Redemption pool balance: only supports weUSD
     uint256 public redemptionBalance;
 
-    // 事件定义
+    // Event definitions
     event FundsDepositedToInvestment(address indexed token, uint256 amount, address indexed from);
     event FundsWithdrawnFromInvestment(address indexed token, uint256 amount, address indexed to);
     event FundsDepositedToRedemption(uint256 amount, address indexed from);
@@ -50,10 +50,10 @@ contract PoolManager is
     event BalanceUpdated(string pool, address indexed token, uint256 newBalance);
 
     /**
-     * @dev 初始化函数
-     * @param admin 管理员地址
-     * @param _weUSD weUSD 地址
-     * @param operator InvestmentManager 地址
+     * @dev Initialization function
+     * @param admin Admin address
+     * @param _weUSD weUSD address
+     * @param operator InvestmentManager address
      */
     function initialize(address admin, address _weUSD, address operator) public initializer {
         __AccessControl_init();
@@ -73,13 +73,13 @@ contract PoolManager is
         _;
     }
 
-    // investmentManager 角色
+    // Only InvestmentManager role
     modifier onlyOperator() {
         require(hasRole(OPERATOR_ROLE, msg.sender), "PoolManager: caller is not an operator");
         _;
     }
 
-    // 投资池：只允许 InvestmentManager 存入且只允许 weUSD
+    // Investment pool: only allows InvestmentManager to deposit and only weUSD
     function depositToInvestment(uint256 amount) external onlyOperator nonReentrant whenNotPaused {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         IERC20(weUSD).safeTransferFrom(msg.sender, address(this), amount);
@@ -88,7 +88,7 @@ contract PoolManager is
         emit BalanceUpdated("investment", weUSD, investmentBalances[weUSD]);
     }
 
-    // 投资池：管理员存入多种 RWA 等代币 (实际转移任意代币)
+    // Investment pool: admin deposits various RWA or other tokens (actual transfer of any token)
     function adminDepositToInvestment(address token, uint256 amount) external onlyAdmin nonReentrant whenNotPaused {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -97,7 +97,7 @@ contract PoolManager is
         emit BalanceUpdated("investment", token, investmentBalances[token]);
     }
 
-    // 投资池：管理员取出任意代币 (实际转移任意代币)
+    // Investment pool: admin withdraws any token (actual transfer of any token)
     function adminWithdrawFromInvestment(address token, uint256 amount, address to) external onlyAdmin nonReentrant {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         require(investmentBalances[token] >= amount, "PoolManager: insufficient investment balance");
@@ -107,7 +107,7 @@ contract PoolManager is
         emit BalanceUpdated("investment", token, investmentBalances[token]);
     }
 
-    // 赎回池：任何人都可以存入weUSD (实际转移weUSD)
+    // Redemption pool: anyone can deposit weUSD (actual transfer of weUSD)
     function depositToRedemption(uint256 amount) external nonReentrant whenNotPaused {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         IERC20(weUSD).safeTransferFrom(msg.sender, address(this), amount);
@@ -116,7 +116,7 @@ contract PoolManager is
         emit BalanceUpdated("redemption", weUSD, redemptionBalance);
     }
 
-    // 赎回池：InvestmentManager 取出给用户 (实际转移weUSD)
+    // Redemption pool: InvestmentManager withdraws for users (actual transfer of weUSD)
     function withdrawFromRedemption(uint256 amount, address to) external onlyOperator nonReentrant {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         require(redemptionBalance >= amount, "PoolManager: insufficient redemption balance");
@@ -126,7 +126,7 @@ contract PoolManager is
         emit BalanceUpdated("redemption", weUSD, redemptionBalance);
     }
 
-    // 管理员内部转移：从投资池 weUSD 到赎回池 (只更新状态，无转移)
+    // Admin internal transfer: from investment pool (weUSD) to redemption pool (only updates state, no transfer)
     function adminTransferToRedemption(uint256 amount) external onlyAdmin {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         require(investmentBalances[weUSD] >= amount, "PoolManager: insufficient investment weUSD balance");
@@ -137,7 +137,7 @@ contract PoolManager is
         emit BalanceUpdated("redemption", weUSD, redemptionBalance);
     }
 
-    // 管理员内部转移：从赎回池 weUSD 到投资池 (只更新状态，无转移)
+    // Admin internal transfer: from redemption pool (weUSD) to investment pool (only updates state, no transfer)
     function adminTransferToInvestment(uint256 amount) external onlyAdmin {
         require(amount > 0, "PoolManager: amount must be greater than 0");
         require(redemptionBalance >= amount, "PoolManager: insufficient redemption weUSD balance");
@@ -148,12 +148,12 @@ contract PoolManager is
         emit BalanceUpdated("redemption", weUSD, redemptionBalance);
     }
 
-    // 查询函数
+    // Query function: get investment pool balance for a token
     function getInvestmentBalance(address token) external view returns (uint256) {
         return investmentBalances[token];
     }
 
-    //批量查询投资池余额
+    // Batch query investment pool balances
     function getInvestmentBalances(address[] memory tokens) external view returns (uint256[] memory) {
         uint256[] memory balances = new uint256[](tokens.length);
         for (uint256 i = 0; i < tokens.length; i++) {
@@ -162,7 +162,7 @@ contract PoolManager is
         return balances;
     }
 
-    // 查询赎回池余额
+    // Query redemption pool balance
     function getRedemptionBalance() external view returns (uint256) {
         return redemptionBalance;
     }
